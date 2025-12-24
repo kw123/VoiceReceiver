@@ -72,6 +72,15 @@
 	</Field>
 
 
+	<Field id="list_devices_max"    type="textfield"   > 
+		<Label>list max number of devices:</Label>   
+	</Field>
+	<Field id="infoLabel_list_devices_max" 			
+			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>when receiving command list devices, it will show up to this number</Label>  
+	</Field>
+
+
 	<Field id="sep-Debug" 			type="separator"/>
 
 	<Field id="ShowDebug" 					type="checkbox"  fontColor="green"> 

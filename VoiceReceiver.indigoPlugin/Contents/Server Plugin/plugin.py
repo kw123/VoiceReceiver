@@ -4,6 +4,11 @@
 # voice receiver Plugin
 # Developed by Karl Wachs
 # karlwachs@me.com
+#
+#############################################################################################
+#	 credit must go to  >>>> @ditch <<<  on the indigo forum who came up with the script
+#	I just build the frame around it 
+#############################################################################################
 
 import datetime
 import json
@@ -43,6 +48,7 @@ kDefaultPluginPrefs = {
 	"folder_name":							"voiceReceiver",
 	"blocked_device_words":					"alarm|lock",
 	"use_fragments_to_dermine_device":			False,
+	"list_devices_max":							300,
 	"ShowDebug":								False,
 	"showLoginTest":							False,
 	"debugLogic":								False,
@@ -220,6 +226,8 @@ class Plugin(indigo.PluginBase):
 
 			self.allow_delta_time = float(self.pluginPrefs.get("allow_delta_time", kDefaultPluginPrefs["allow_delta_time"]*10.))/10.
 			self.expect_time_tag = self.pluginPrefs.get("expect_time_tag", kDefaultPluginPrefs["expect_time_tag"])
+
+			self.list_devices_max = self.pluginPrefs.get("list_devices_max", kDefaultPluginPrefs["list_devices_max"])
 
 			self.folder_name = self.pluginPrefs.get("folder_name", kDefaultPluginPrefs["folder_name"])	
 			try:    indigo.variables.folder.create(self.folder_name)
@@ -414,39 +422,54 @@ class Plugin(indigo.PluginBase):
 	def printConfig(self,  valuesDict=None , typeId=""):
 		try:
 			out =  "\n"
+			out += "#########################################################################\n"
 			out += " credit must go to @ditch on the indigo forum who came up with the script\n "
-			out =  "\n"
-			out =  "What does it do?\n"
-			out =  "  receives message in varibale from iphone dictation shortcut \n"
-			out =  "  analyses the received string to look for commands to \n"
-			out =  "       start indigo actions (must be defined in menu)\n"
-			out =  "       switch on/off or dim devices \n"
-			out =  "\n"
-			out =  "\n"
+			out += "#########################################################################\n"
+			out +=  "\n"
+			out +=  "What does it do?\n"
+			out +=  "  receives message in varibale from iphone dictation shortcut \n"
+			out +=  "  analyses the received string to look for commands to \n"
+			out +=  "       start indigo actions (must be defined in menu)\n"
+			out +=  "       switch on/off or dim devices \n"
+			out +=  "\n"
+			out +=  "\n"
 			out += '================================ INSTALL ===========================\n'
 			out += 'To install correctly: \n'
 			out += 'Create shortcut on iPhone with the following items:\n'
 			out += '1. Dismiss Siri and Continue                                         to shorten pause \n'
 			out += '2. Dictate text                                                      this is where the voice gets recorded\n'
 			out += '3. Current Date                                                      create date object  \n'
-			out += '3. Get Seconds between 1970-01-01 0:00 z and Date                    create epoch time in secs  \n'
+			out += '3. Get Seconds between 1970-01-01 0:00 z and Date                    create time since epoch in secs  \n'
 			out += '4. Text "Time Between Dates" "Dictated Text"                         create text string to be send timestamp space command\n'
-			out += '5. Get contents of https://<yourid>indigodome.net/v2/api/command     indigo contact  \n'
-			out += '6a.   method Post\n'
-			out += '6b.   Headers\n'
-			out += '6b1.    Authorization  Bearer <your id string> 						 from indigo web page \n'
-			out += '6b2.    Content-Type applicatio/json\n'
-			out += '6b3.    Request Body: JSON\n'
-			out += '6b3a.     message : Text indigovariable.updateValue\n'
-			out += '6b3a.     objectId : <indigo variable id>                            here you put the indigo variable id\n'
-			out += '6b3a.     parameters : Dictionary\n'
-			out += '6b3a1.      value  Text: Text                                        this is the varibale that contains time space command\n'
-			out += '7. name it eg "indigo" \n'
-			out += '8. share to desktop\n'
-			out += '9. save\n'
-			out += '10.  if you have a light named office lights:  \n'
-			out += '10.  speaking "hey Siri Indigo" pause "turn on office lights"  \n'
-			out += '10.  should turn on office lights  \n'
+			out += '5. get current IP Address (local)                                    \n'
+			out += '6. if Current IP Address contains 192.                               use you local ip number start here\n'
+			out += '6.1. Get contents of https://ip of indigo server:8176/v2/api/command local indigo contact  \n'
+			out += '6.2.   method Post\n'
+			out += '6.3.   Headers\n'
+			out += '6.3.1    Authorization  Bearer <your id string> 					 from indigo web page \n'
+			out += '6.3.1    Content-Type applicatio/json\n'
+			out += '6.4    Request Body: JSON\n'
+			out += '6.4.1    message : Text indigovariable.updateValue\n'
+			out += '6.4.2    objectId : <indigo variable id>                             here you put the indigo variable id\n'
+			out += '6.4.3    parameters : Dictionary\n'
+			out += '6.4.3.1    value  Text: Text                                         this is the varibale that contains time space command\n'
+			out += '7. Otherwise \n'
+			out += '7.1. Get contents of https://<yourid>indigodome.net/v2/api/command   indigo exernal contact  \n'
+			out += '7.2.   method Post\n'
+			out += '7.3.   Headers\n'
+			out += '7.3.1    Authorization  Bearer <your id string> 					 from indigo web page \n'
+			out += '7.3.1    Content-Type applicatio/json\n'
+			out += '7.4    Request Body: JSON\n'
+			out += '7.4.1    message : Text indigovariable.updateValue\n'
+			out += '7.4.2    objectId : <indigo variable id>                             here you put the indigo variable id\n'
+			out += '7.4.3    parameters : Dictionary\n'
+			out += '7.4.3.1  value  Text: Text                                           this is the varibale that contains time space command\n'
+			out += '8. name it eg "indigo" \n'
+			out += '9. share to desktop\n'
+			out += '10. save\n'
+			out += '11.  if you have a light named office lights:  \n'
+			out += '12.  speaking "hey Siri Indigo" pause "turn on office lights"  \n'
+			out += '13.  should turn on office lights  \n'
 			out += '\n'
 			out += '  command examples  \n'
 			out += '   turn on/off device_name  \n'
@@ -482,6 +505,8 @@ class Plugin(indigo.PluginBase):
 			out += "                         bad words to be replaced by good words  using {map voice string : to string to be used} \n\n"
 			out += "                          eg dor : door  \n\n"
 			out += "                          or tür : door (for the germans)  \n\n"
+			out += f"list devices max     =  {self.list_devices_max}\n"
+			out += "                         list max number of devices when receiving command list devices \n\n"
 			out += '\n'
 			self.indiLOG.log(20,out)
 		except	Exception as e:
@@ -697,7 +722,7 @@ class Plugin(indigo.PluginBase):
 			
 			if self.decideMyLog("ReceivdeData"):	self.indiLOG.log(20,f"Normalized command: '{cmd}'")
 	
-			if cmdLower == "what can you do":
+			if cmdLower in["what can you do","list actions"]:
 				self.log_available_commands()
 				return
 	
@@ -723,9 +748,6 @@ class Plugin(indigo.PluginBase):
 		except	Exception as e:
 			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
 		return False
-
-
-
 
 
 
@@ -912,18 +934,18 @@ class Plugin(indigo.PluginBase):
 	# ==========================
 	
 	def log_available_commands(self):
-		self.indiLOG.log(20,"Available commands:")
+		self.indiLOG.log(20,"Available ACTION commands: that are mapped from voice to actual indigo action groups")
 		for cmd in sorted( self.actions.keys()):
-			self.indiLOG.log(20,f"  Indigo, {cmd}")
+			self.indiLOG.log(20,f"  {cmd}")
 	
 	def log_devices(self):
 		self.indiLOG.log(20,"Device list (name → normalized) [truncated if large]:")
 		count = 0
 		for dev in indigo.devices:
-			if count >=  self.LIST_DEVICES_MAX:
-				self.indiLOG.log(20,f"... truncated at {LIST_DEVICES_MAX} devices ...")
+			if count >=  self.list_devices_max:
+				self.indiLOG.log(20,f"... truncated at {self.list_devices_max} devices ...")
 				break
-			self.indiLOG.log(20,f"   {dev.name} → {normalize_name_for_match(dev.name)}")
+			self.indiLOG.log(20,f"   {dev.name:55} → {self.normalize_name_for_match(dev.name)}")
 			count += 1
 	
 	
