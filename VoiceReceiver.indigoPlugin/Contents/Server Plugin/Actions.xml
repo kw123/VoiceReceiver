@@ -1,0 +1,20 @@
+<Actions>
+        
+	<Action id="boost">
+		<Name>Boost thermostat</Name>
+		<CallbackMethod>boostThermostatAction</CallbackMethod> 
+		<ConfigUI>
+			<Field     id="deviceId" type="menu" defaultValue="0">
+				<Label>select thermostat device:</Label>
+				<List class="self" filter="thermostat" method="filterDevices"  dynamicReload="no"/>
+			</Field>
+			<Field  id="onOff" type="menu" defaultValue="on">
+				<List>
+					<Option value="off">off </Option>
+					<Option value="on">On </Option>
+				</List>
+				<Label>boost on / off:</Label>
+			</Field>
+		</ConfigUI>
+	</Action>
+</Actions>

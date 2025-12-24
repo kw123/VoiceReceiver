@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<PluginConfig>
+
+	<Field id="infoLabel1" 				type="label" fontColor="orange" > 
+		<Label>Dictate plugin by Karl Wachs
+	original by 
+	this plugin receives voice commands from iphone .. via shortcuts 
+	the shortcut must send "timestamp command"
+	see example using dictate 
+	 """  credit must go to @ditch on the indigo forum who came up with the script """
+	I just build the frame around it 
+	for help do menu / help ...
+</Label>  
+	</Field>
+
+	<Field id="simpleSeparator22" 		type="separator"/>
+
+	<Field id="MSG"        	type="textfield"   > 
+		<Label> msg from plugin:</Label>  
+	</Field>
+
+
+	<Field id="expect_time_tag"  					type="checkbox"   > 
+		<Label>expect time tag in message:</Label> 
+	</Field>
+	<Field id="infoLabel_expect_time_tag" 			
+			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>requires time since epoch as first word in the message</Label>  
+	</Field>
+
+	<Field id="allow_delta_time" 					type="menu" > 
+		<Label>accept messages not older than xx secs :</Label>  
+		<List>
+			<Option value="5"  >5 secs</Option>
+			<Option value="10" >1 secs</Option>
+			<Option value="15" >1.5 secs</Option>
+			<Option value="20" >2.0 secs</Option>
+			<Option value="25" >2.5 secs</Option>
+			<Option value="30" >3.0 secs default</Option>
+			<Option value="35" >3.5 secs</Option>
+		</List>
+	</Field>
+	<Field id="infoLabel_delta_time" 			
+			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>max time between send and receive message</Label>  
+	</Field>
+
+
+	<Field id="use_fragments_to_dermine_device"    type="checkbox"   > 
+		<Label>use fragments to find device:</Label>   
+	</Field>
+	<Field id="infoLabel_fragements" 			
+			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>When the device is not fully specified the plugin can try to find the device doing a partial match</Label>  
+	</Field>
+
+
+	<Field id="var_name"    	type="textfield"   > 
+		<Label>variable name to receive messages:</Label>   
+	</Field>
+	<Field id="infoLabel_vars" 			
+			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>name of the variable the messages are received in</Label>  
+	</Field>
+
+	<Field id="folder_name"    type="textfield"   > 
+		<Label>foldername for variable:</Label>   
+	</Field>
+	<Field id="infoLabel_folder" 			
+			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>foldername for the variable</Label>  
+	</Field>
+
+
+	<Field id="sep-Debug" 			type="separator"/>
+
+	<Field id="ShowDebug" 					type="checkbox"  fontColor="green"> 
+		<Label>Show DEBUG section........................................................:</Label>  
+	</Field>
+
+	<Field id="showLoginTest"      type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label> show logging test at startup:</Label>  						</Field>
+	<Field id="debugLogic"         type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (1) Logic:</Label>											</Field>
+	<Field id="debugReceivdeData"  type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (2) Received Data:</Label>				</Field>
+	<Field id="debugBadMessage"    type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (3) Bad Message:</Label>			</Field>
+	<Field id="debugUpdateIndigo"  type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (4) update indigo actions and devices:</Label>			</Field>
+	<Field id="debugActions"       type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (5) actions:</Label>										</Field>
+
+	<Field id="debugSpecial"       type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (99) Special debug for development:</Label>					</Field>
+	<Field id="debugAll"           type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (100) all of the above = everything:</Label>					</Field>
+	<Field id="sep-ShowDebug" type="separator"  />
+
+
+</PluginConfig>

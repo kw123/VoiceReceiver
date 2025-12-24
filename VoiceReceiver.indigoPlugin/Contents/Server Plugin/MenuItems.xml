@@ -1,0 +1,152 @@
+<?xml version="1.0"?>
+<MenuItems>
+
+	<MenuItem id="printConfig">
+		<Name>Print Config and Help</Name>
+		<CallbackMethod>printConfig</CallbackMethod>
+    </MenuItem>
+
+
+
+	<MenuItem id="selectActions">
+		<Name>Define Actions</Name>
+		<ConfigUI>
+			<Field id="lab1" type="label">
+				<Label>Define actions and action IDs first confirm action id number</Label>
+			</Field>
+			
+			
+	           <Field id="actionNumber" type="menu" defaultValue="" >
+				<List class="self" method="filternumbers_1_100" dynamicReload="true" />
+				<Label>Select Action Number:</Label>
+			</Field>
+			<Field id="actionNumberConfirm" type="button">
+				<Label>confirm Action number</Label>
+				<Title>CONFIRM</Title>
+				<CallbackMethod>actionNumberConfirmCallback</CallbackMethod>
+			</Field>
+		
+           <Field id="actionadd" type="menu" defaultValue="" >
+				<List class="self" filter = "0" method="filterActions" dynamicReload="true" />
+				<Label>Select Action to be enabled to be added:</Label>
+			</Field>
+			
+			<Field id="xactionsadd" type="button">
+				<Label>After selection click</Label>
+				<Title>ADD</Title>
+				<CallbackMethod>addActionsCallback</CallbackMethod>
+			</Field>
+			
+           <Field id="actiondel" type="menu" defaultValue="def" >
+				<List class="self" filter = "2" method="filterActions" dynamicReload="true" />
+				<Label>Select Action to be deleted:</Label>
+			</Field>
+			<Field id="xactionsdel" type="button">
+				<Label>After selection click</Label>
+				<Title>DEL</Title>
+				<CallbackMethod>delActionsCallback</CallbackMethod>
+			</Field>
+
+		</ConfigUI>
+	</MenuItem>
+	<MenuItem id="synomymes">
+		<Name>Define Synonymes</Name>
+		<ConfigUI>
+			<Field id="lab1" type="label">
+				<Label>define synonyms for actions </Label>
+			</Field>
+			
+           <Field id="action" type="menu" defaultValue="" >
+				<List class="self" filter = "-1" method="filterActions" dynamicReload="true" />
+				<Label>Select Action to be enabled to be used:</Label>
+			</Field>
+           <Field id="synonymAdd" type="textfield" defaultValue="" >
+				<Label>define synonym for this action</Label>
+			</Field>
+			
+			<Field id="addSynonym" type="button">
+				<Label>After selection click</Label>
+				<Title>ADD</Title>
+				<CallbackMethod>defineSynonymActionCallback</CallbackMethod>
+			</Field>
+
+			
+ 			<Field id="lab2" type="label">
+				<Label>define synonym to be removed</Label>
+			</Field>
+			
+            <Field id="synRemove" type="menu" defaultValue="" >
+				<List class="self"  method="filterSynonymesActions" dynamicReload="true" />
+				<Label>Select synonym :</Label>
+			</Field>
+			
+			<Field id="removeSynonymAction" type="button">
+				<Label>After selection click</Label>
+				<Title>REMOVE</Title>
+				<CallbackMethod>removeSynonymCallback</CallbackMethod>
+			</Field>
+
+
+		</ConfigUI>
+	</MenuItem>
+	<MenuItem id="badGood">
+		<Name>Define mapping of phrases </Name>
+		<ConfigUI>
+			<Field id="lab1" type="label">
+				<Label>define mapping from unclear to good phrases</Label>
+			</Field>
+          <Field id="from" type="textfield" defaultValue="" >
+				<Label>define unclear word</Label>
+			</Field>
+         <Field id="to" type="textfield" defaultValue="" >
+				<Label>define good word</Label>
+			</Field>
+			
+			<Field id="xaddbad" type="button">
+				<Label>After selection click</Label>
+				<Title>ADD</Title>
+				<CallbackMethod>addFromCallback</CallbackMethod>
+			</Field>
+
+			
+ 			<Field id="lab2" type="label">
+				<Label>define from unclear phrase to be removed</Label>
+			</Field>
+			
+			
+            <Field id="fromRemove" type="menu" defaultValue="" >
+				<List class="self"  method="filterFromTo" dynamicReload="true" />
+				<Label>Select unclear phrase:</Label>
+			</Field>
+			
+			<Field id="xremoveBad" type="button">
+				<Label>After selection click</Label>
+				<Title>REMOVE</Title>
+				<CallbackMethod>removeFromCallback</CallbackMethod>
+			</Field>
+
+
+		</ConfigUI>
+	</MenuItem>
+	
+	<MenuItem id="blockedWords">
+		<Name>Block words</Name>
+		<ConfigUI>
+			<Field id="lab1" type="label">
+				<Label>define bock words that must be ignored</Label>
+			</Field>
+			
+          <Field id="blocked_device_words" type="textfield" defaultValue="" >
+				<Label>syntax:eg alarm|lock</Label>
+		  </Field>
+			
+		  <Field id="xblock" type="button">
+				<Label>After selection click</Label>
+				<Title>BLOCK</Title>
+				<CallbackMethod>blockWordsCallback</CallbackMethod>
+		  </Field>
+		</ConfigUI>
+	</MenuItem>
+
+</MenuItems>
+
