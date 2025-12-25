@@ -7,7 +7,7 @@
 	this plugin receives voice commands from iphone .. via shortcuts 
 	the shortcut must send "timestamp command"
 	see example using dictate 
-	 """  credit must go to @ditch on the indigo forum who came up with the script """
+	 """  credit must go to @dtich on the indigo forum who came up with the script """
 	I just build the frame around it 
 	for help do menu / help ...
 </Label>  
@@ -23,8 +23,7 @@
 	<Field id="expect_time_tag"  					type="checkbox"   > 
 		<Label>expect time tag in message:</Label> 
 	</Field>
-	<Field id="infoLabel_expect_time_tag" 			
-			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+	<Field id="infoLabel_expect_time_tag" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
 		<Label>requires time since epoch as first word in the message</Label>  
 	</Field>
 
@@ -40,8 +39,7 @@
 			<Option value="35" >3.5 secs</Option>
 		</List>
 	</Field>
-	<Field id="infoLabel_delta_time" 			
-			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+	<Field id="infoLabel_delta_time" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
 		<Label>max time between send and receive message</Label>  
 	</Field>
 
@@ -49,8 +47,7 @@
 	<Field id="use_fragments_to_dermine_device"    type="checkbox"   > 
 		<Label>use fragments to find device:</Label>   
 	</Field>
-	<Field id="infoLabel_fragements" 			
-			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+	<Field id="infoLabel_fragements" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
 		<Label>When the device is not fully specified the plugin can try to find the device doing a partial match</Label>  
 	</Field>
 
@@ -63,11 +60,17 @@
 		<Label>name of the variable the messages are received in</Label>  
 	</Field>
 
+	<Field id="var_name_feedback"    	type="textfield"   > 
+		<Label>variable name to feedback status to iphone:</Label>   
+	</Field>
+	<Field id="infoLabel_var_feedback" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>name of the variable the ok message is picked up from iphone shortcut</Label>  
+	</Field>
+
 	<Field id="folder_name"    type="textfield"   > 
 		<Label>foldername for variable:</Label>   
 	</Field>
-	<Field id="infoLabel_folder" 			
-			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+	<Field id="infoLabel_folder" 		alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
 		<Label>foldername for the variable</Label>  
 	</Field>
 
@@ -75,9 +78,23 @@
 	<Field id="list_devices_max"    type="textfield"   > 
 		<Label>list max number of devices:</Label>   
 	</Field>
-	<Field id="infoLabel_list_devices_max" 			
-			alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+	<Field id="infoLabel_list_devices_max" 	 alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
 		<Label>when receiving command list devices, it will show up to this number</Label>  
+	</Field>
+
+
+	<Field id="return_ok"    type="textfield"   > 
+		<Label>return text when successful:</Label>   
+	</Field>
+	<Field id="infoLabel_return_ok"  alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>send text back to iphone when received message can  be interpreted  successfully</Label>  
+	</Field>
+
+	<Field id="return_bad"    type="textfield"   > 
+		<Label>return text when not successful:</Label>   
+	</Field>
+	<Field id="infoLabel_return_bad" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>send text back to iphone when received message can not be interpreted  successfully</Label>  
 	</Field>
 
 

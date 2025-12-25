@@ -12,7 +12,7 @@
 		<Name>Define Actions</Name>
 		<ConfigUI>
 			<Field id="lab1" type="label">
-				<Label>Define actions and action IDs first confirm action id number</Label>
+				<Label>Define indigo actions and action ID to be enabled / removed </Label>
 			</Field>
 			
 			
@@ -25,7 +25,7 @@
 				<Title>CONFIRM</Title>
 				<CallbackMethod>actionNumberConfirmCallback</CallbackMethod>
 			</Field>
-		
+			
            <Field id="actionadd" type="menu" defaultValue="" >
 				<List class="self" filter = "0" method="filterActions" dynamicReload="true" />
 				<Label>Select Action to be enabled to be added:</Label>
@@ -53,7 +53,7 @@
 		<Name>Define Synonymes</Name>
 		<ConfigUI>
 			<Field id="lab1" type="label">
-				<Label>define synonyms for actions </Label>
+				<Label>Define synonyms for actions: Here you can define short commands for long named indigo actions </Label>
 			</Field>
 			
            <Field id="action" type="menu" defaultValue="" >
@@ -89,11 +89,12 @@
 
 		</ConfigUI>
 	</MenuItem>
+	
 	<MenuItem id="badGood">
 		<Name>Define mapping of phrases </Name>
 		<ConfigUI>
 			<Field id="lab1" type="label">
-				<Label>define mapping from unclear to good phrases</Label>
+				<Label>define mapping from unclear to good phrases, eg "the bug" to "debug" </Label>
 			</Field>
           <Field id="from" type="textfield" defaultValue="" >
 				<Label>define unclear word</Label>
@@ -133,11 +134,11 @@
 		<Name>Block words</Name>
 		<ConfigUI>
 			<Field id="lab1" type="label">
-				<Label>define bock words that must be ignored</Label>
+				<Label>define words that must be ignored. Wehn they are present in a received command the whole command will be ignored</Label>
 			</Field>
 			
           <Field id="blocked_device_words" type="textfield" defaultValue="" >
-				<Label>syntax:eg alarm|lock</Label>
+				<Label>syntax:eg alarm|lock|enable</Label>
 		  </Field>
 			
 		  <Field id="xblock" type="button">

@@ -6,7 +6,7 @@
 # karlwachs@me.com
 #
 #############################################################################################
-#	 credit must go to  >>>> @ditch <<<  on the indigo forum who came up with the script
+#	 credit must go to  >>>> @dtich <<<  on the indigo forum who came up with the script
 #	I just build the frame around it 
 #############################################################################################
 
@@ -45,8 +45,11 @@ kDefaultPluginPrefs = {
 	"expect_time_tag":						True,
 	"allow_delta_time":						30.,
 	"var_name":								"voice_command_text",
+	"var_name_feedback":					"voice_command_feedback",
 	"folder_name":							"voiceReceiver",
 	"blocked_device_words":					"alarm|lock",
+	"return_ok":							"ok",
+	"return_bad":							"not sucessful",
 	"use_fragments_to_dermine_device":			False,
 	"list_devices_max":							300,
 	"ShowDebug":								False,
@@ -234,7 +237,14 @@ class Plugin(indigo.PluginBase):
 			except: pass
 
 			self.var_name = self.pluginPrefs.get("var_name", kDefaultPluginPrefs["var_name"])	
-			try:    indigo.variable.create(var_name,  "", self.folder_name)
+			try:    indigo.variable.create(self.var_name,  "", self.folder_name)
+			except: pass
+
+			self.return_ok = self.pluginPrefs.get("return_ok", kDefaultPluginPrefs["return_ok"])	
+			self.return_bad = self.pluginPrefs.get("return_bad", kDefaultPluginPrefs["return_bad"])	
+			
+			self.var_name_feedback = self.pluginPrefs.get("var_name_feedback", kDefaultPluginPrefs["var_name_feedback"])	
+			try:    indigo.variable.create(self.var_name_feedback,  "", self.folder_name)
 			except: pass
 			
 			
@@ -421,21 +431,30 @@ class Plugin(indigo.PluginBase):
 	####-----------------	 ---------
 	def printConfig(self,  valuesDict=None , typeId=""):
 		try:
-			out =  "\n"
-			out += "#########################################################################\n"
-			out += " credit must go to @ditch on the indigo forum who came up with the script\n "
-			out += "#########################################################################\n"
-			out +=  "\n"
-			out +=  "What does it do?\n"
-			out +=  "  receives message in varibale from iphone dictation shortcut \n"
-			out +=  "  analyses the received string to look for commands to \n"
-			out +=  "       start indigo actions (must be defined in menu)\n"
-			out +=  "       switch on/off or dim devices \n"
-			out +=  "\n"
-			out +=  "\n"
+			out =  '\n'
+			out += '#########################################################################\n'
+			out += ' credit must go to @dtich on the indigo forum who came up with the script\n'
+			out += '#########################################################################\n'
+			out += '\n'
+			out += 'What does it do?\n'
+			out += '  the plugin \n'
+			out += '  - receives message in indigo variable from iphone dictation shortcut \n'
+			out += '  - analyses the received string to look for commands to \n'
+			out += '    --   start indigo actions (must be defined inplugin menu)\n'
+			out += '    --   switch on/off or dim devices , ... \n'
+			out += '  - sends back  ok / not sucessful (you can set) and the iphone speaks that text\n'
+			out += '  - you can define text mapping (bad to good) and black lists of devices / action that should be be executed\n'
+			out += '  the shortcut on the iphone / mac/ ipad/..  \n'
+			out += '  - listens to command \n'
+			out += '  - sends command into indigo variable \n'
+			out += '  - receives result from variable \n'
+			out += '  - speaks result  (ok bad)\n'
+			out += '\n'
+			out += '\n'
 			out += '================================ INSTALL ===========================\n'
-			out += 'To install correctly: \n'
-			out += 'Create shortcut on iPhone with the following items:\n'
+			out += 'In plugin define the configurations in plugin config and menu\n'
+			out += '\n'
+			out += '=== Create shortcut on iPhone with the following items: ====\n'
 			out += '1. Dismiss Siri and Continue                                         to shorten pause \n'
 			out += '2. Dictate text                                                      this is where the voice gets recorded\n'
 			out += '3. Current Date                                                      create date object  \n'
@@ -443,7 +462,7 @@ class Plugin(indigo.PluginBase):
 			out += '4. Text "Time Between Dates" "Dictated Text"                         create text string to be send timestamp space command\n'
 			out += '5. get current IP Address (local)                                    \n'
 			out += '6. if Current IP Address contains 192.                               use you local ip number start here\n'
-			out += '6.1. Get contents of https://ip of indigo server:8176/v2/api/command local indigo contact  \n'
+			out += '6.1. Get contents of https://ip of indigo server:8176/v2/api/command  for local indigo contact  \n'
 			out += '6.2.   method Post\n'
 			out += '6.3.   Headers\n'
 			out += '6.3.1    Authorization  Bearer <your id string> 					 from indigo web page \n'
@@ -453,30 +472,59 @@ class Plugin(indigo.PluginBase):
 			out += '6.4.2    objectId : <indigo variable id>                             here you put the indigo variable id\n'
 			out += '6.4.3    parameters : Dictionary\n'
 			out += '6.4.3.1    value  Text: Text                                         this is the varibale that contains time space command\n'
-			out += '7. Otherwise \n'
-			out += '7.1. Get contents of https://<yourid>indigodome.net/v2/api/command   indigo exernal contact  \n'
-			out += '7.2.   method Post\n'
+			out += '7.1. Get contents of http://ip of indigo server:8176/v2/api/variable/12345     \n'
+			out += '7.2.   method get\n'
 			out += '7.3.   Headers\n'
 			out += '7.3.1    Authorization  Bearer <your id string> 					 from indigo web page \n'
 			out += '7.3.1    Content-Type applicatio/json\n'
-			out += '7.4    Request Body: JSON\n'
-			out += '7.4.1    message : Text indigovariable.updateValue\n'
-			out += '7.4.2    objectId : <indigo variable id>                             here you put the indigo variable id\n'
-			out += '7.4.3    parameters : Dictionary\n'
-			out += '7.4.3.1  value  Text: Text                                           this is the varibale that contains time space command\n'
-			out += '8. name it eg "indigo" \n'
-			out += '9. share to desktop\n'
-			out += '10. save\n'
-			out += '11.  if you have a light named office lights:  \n'
-			out += '12.  speaking "hey Siri Indigo" pause "turn on office lights"  \n'
-			out += '13.  should turn on office lights  \n'
+			out += '7.4  get value for value in get contents of URL\n'
+			out += '7.5  speak Dictionary value                                          this will speak the reslt send back from the plugin ok/ bad\n'
+			out += '8. Otherwise \n'
+			out += '8.1. Get contents of https://<yourid>indigodome.net/v2/api/command   indigo exernal contact  \n'
+			out += '8.2.   method Post\n'
+			out += '8.3.   Headers\n'
+			out += '8.3.1    Authorization  Bearer <your id string> 					 from indigo web page \n'
+			out += '8.3.1    Content-Type applicatio/json\n'
+			out += '8.4    Request Body: JSON\n'
+			out += '8.4.1    message : Text indigovariable.updateValue\n'
+			out += '8.4.2    objectId : <indigo variable id>                             here you put the indigo variable id\n'
+			out += '8.4.3    parameters : Dictionary\n'
+			out += '8.4.3.1  value  Text: Text                                           this is the varibale that contains result text\n'
+			out += '9.1. Get contents of https://<yourid>indigodome.net/v2/api/variable/12345     \n'
+			out += '9.2.   method get\n'
+			out += '9.3.   Headers\n'
+			out += '9.3.1    Authorization  Bearer <your id string> 					 from indigo web page \n'
+			out += '9.3.1    Content-Type applicatio/json\n'
+			out += '9.4  get value for value in get contents of URL\n'
+			out += '9.5  speak Dictionary value                                          this will speak the reslt send back from the plugin ok/ bad\n'
+			out += '10. name it eg "indigo" \n'
+			out += '11. share to desktop\n'
+			out += '12. save\n'
+			out += '=== END create shortcut on iPhone with the following items: ====\n'
 			out += '\n'
-			out += '  command examples  \n'
+			out += '13.  if you have a light named office lights:  \n'
+			out += '14.  speaking "hey Siri Indigo" pause "turn on office lights"  \n'
+			out += '15.  should turn on office lights  \n'
+			out += '\n'
+			out += '====  commands ====================================================\n'
 			out += '   turn on/off device_name  \n'
-			out += '   set device to xx percent  (xx = 0..100)\n'
-			out += '   device_name to xx    (xx = 0..100)\n'
+			out += '   toggle device_name  \n'
+			out += '   set device to xx percent  (xx = 0..100)                            for dimmers\n'
+			out += '   set device_name to xx    (xx = 0..100)                             for dimmers\n'
+			out += '   (set) set heat point device to degrees                             for thermostates\n'
+			out += '   set heat device to degrees                                         for thermostates\n'
+			out += '   (set) set cool point device to degrees                             for thermostates\n'
+			out += '   set cool device to degrees                                         for thermostates\n'
 			out += '   action_name  (name and action id must be set in menu)  \n'
-			out += '   device_name to xx and action_name and device2_name on    will execute 3 commands  \n'
+			out += '   set device_name to xx and action_name and  set device2_name on     will execute 3 commands  \n'
+			out += '\n'
+			out += '=== meta commands ==================================================\n'
+			out += '  list devices                                                        will print add devices to logfile  \n'
+			out += '  list actions   or  what can you do                                  will print all defined  ndigo actions setup in this plugin \n'
+			out += '  debug on                                                            will enable debug all \n'
+			out += '  debug off                                                           will disable debug all \n'
+			out += '  test                                                                will print "test" to logfile \n'
+			out += '  help                                                                will print this to logfile \n'
 			out += ' upper and lower cases in commands are ignored\n'
 			out += '\n'
 			out += 'in menue you can define:\n'
@@ -484,29 +532,35 @@ class Plugin(indigo.PluginBase):
 			out += '2. mappings of bad to good words (eg lamp to lights)  the plugin will replace the bad strings with the good\n'
 			out += '\n'
 			out += '\n'
-			out += "\n =============plugin config Parameters========\n"
-			out += f"allow_delta_time     =  {self.allow_delta_time}\n"
-			out += "                         message must not be older thn current timestamp +  allow_delta_time\n\n"
-			out += f"expect_time_tag      =  {self.expect_time_tag}\n"
-			out += "                         require time stamp value as first work in message\n\n"
-			out += f"use fragments        =  {self.use_fragments_to_dermine_device}\n"
-			out += "                         allow plugin to try to figure out which device was mean if not 100 % match using fragments\n\n"
-			out += f"var_name             =  {self.var_name}\n"
-			out += "                         name of the variable the plugin will listen to, will be created if it does not exist\n\n"
-			out += f"folder_name          =  {self.folder_name}\n"
-			out += "                         folder name of the variable, will be created if it does not exist\n\n"
-			out += f"blocked_device_words =  {self.blocked_device_words}\n"
-			out += "                         words that are not allowed for devices and actions eg alarm\n\n"
-			out += f"actions              =  {self.actions}\n"
-			out += "                         indigo action names and indigo ids, using {indigo action name:[indigo action id, seq number]} }\n\n"
-			out += f"synonymes Action     =  {self.synonymes_for_actions}\n"
-			out += "                         voice action names and  indigo action ids, using {voice action string:indigo action id}  \n\n"
-			out += f"map_from_to          =  {self.map_from_to}\n"
-			out += "                         bad words to be replaced by good words  using {map voice string : to string to be used} \n\n"
-			out += "                          eg dor : door  \n\n"
-			out += "                          or tür : door (for the germans)  \n\n"
-			out += f"list devices max     =  {self.list_devices_max}\n"
-			out += "                         list max number of devices when receiving command list devices \n\n"
+			out += '\n =============plugin config Parameters========\n'
+			out += f'allow_delta_time      =  {self.allow_delta_time}\n'
+			out += '                          message must not be older thn current timestamp +  allow_delta_time\n\n'
+			out += f'expect_time_tag       =  {self.expect_time_tag}\n'
+			out += '                          require time stamp value as first work in message\n\n'
+			out += f'use fragments         =  {self.use_fragments_to_dermine_device}\n'
+			out += '                          allow plugin to try to figure out which device was mean if not 100 % match using fragments\n\n'
+			out += f'var_name              =  {self.var_name}\n'
+			out += '                          name of the variable the plugin will listen to, will be created if it does not exist\n\n'
+			out += f'var_name_feedback     =  {self.var_name_feedback}\n'
+			out += '                         name of the variable the plugin will write reslut to to be pickup by iphone, will be created if it does not exist\n\n'
+			out += f'return string if ok   =  {self.return_ok}\n'
+			out += '                         string written to variable_feedback if execution is ok\n\n'
+			out += f'return string if bad  =  {self.return_bad}\n'
+			out += '                         string written to variable_feedback if execution is not ok\n\n'
+			out += f'folder_name           =  {self.folder_name}\n'
+			out += '                         folder name of the variables, will be created if it does not exist\n\n'
+			out += f'blocked_device_words  =  {self.blocked_device_words}\n'
+			out += '                          words that are not allowed for devices and actions eg "alarm", when they are present the whole command is ignored\n\n'
+			out += f'actions               =  {self.actions}\n'
+			out += '                         indigo action names and indigo ids, using {indigo action name:[indigo action id, seq number]} }\n\n'
+			out += f'synonymes for actions =  {self.synonymes_for_actions}\n'
+			out += '                          voice action names and  indigo action ids, using {voice action string:indigo action id}  \n\n'
+			out += f'map_from_to           =  {self.map_from_to}\n'
+			out += '                          bad words to be replaced by good words  using {map voice string : to string to be used} \n\n'
+			out += '                           eg dor : door  \n\n'
+			out += '                           or tür : door (for the germans)  \n\n'
+			out += f'list devices max      =  {self.list_devices_max}\n'
+			out += '                          list max number of devices when receiving command list devices \n\n'
 			out += '\n'
 			self.indiLOG.log(20,out)
 		except	Exception as e:
@@ -631,6 +685,8 @@ class Plugin(indigo.PluginBase):
 			self.expect_time_tag =				valuesDict.get("expect_time_tag", self.expect_time_tag)
 			self.folder_name =					valuesDict.get("folder_name", self.folder_name)
 			self.var_name =						valuesDict.get("var_name", self.var_name)
+			self.var_name_feedback =			valuesDict.get("var_name_feedback", self.var_name_feedback)
+
 			self.redoInitVariables = 		True
 			return True, valuesDict
 
@@ -701,7 +757,7 @@ class Plugin(indigo.PluginBase):
 		
 			if self.var_name != orig_var.name: return 
 			if self.decideMyLog("ReceivdeData"): self.indiLOG.log(20,f"orig_var '{new_var.value}'")
-				
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_bad)
 	
 			raw = new_var.value
 	
@@ -724,6 +780,7 @@ class Plugin(indigo.PluginBase):
 	
 			if cmdLower in["what can you do","list actions"]:
 				self.log_available_commands()
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 				return
 	
 			elif cmdLower == "list devices":
@@ -731,7 +788,27 @@ class Plugin(indigo.PluginBase):
 				return
 	
 			elif cmdLower == "test":
-				self.indiLOG.log(20,f"received test command: '{cmd}'")
+				self.indiLOG.log(20,f"received command: '{cmd}'")
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				return
+	
+			elif cmdLower == "debug on":
+				self.indiLOG.log(20,f"received command: '{cmd}'")
+				self.pluginPrefs["debugAll"] = True
+				self.setDebugFromPrefs(self.pluginPrefs)
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				return
+
+			elif cmdLower == "debug off":
+				self.indiLOG.log(20,f"received command: '{cmd}'")
+				self.pluginPrefs["debugAll"] = False
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				self.setDebugFromPrefs(self.pluginPrefs)
+
+			elif cmdLower == "help":
+				self.indiLOG.log(20,f"received command: '{cmd}'")
+				self.printConfig()
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 				return
 	
 	
@@ -959,7 +1036,34 @@ class Plugin(indigo.PluginBase):
 		except Exception:
 			return False
 	
-	def handle_set_level(self, device_phrase: str, level: int) -> bool:
+	def handle_set_level(self, cmd: str) -> bool:
+		
+		# VERB LEVEL FIRST (so "brighten/dim ..." doesn't get swallowed)
+		m = re.match(r"^(\w+)\s+(.+?)\s+to\s+(\d+)\s*(?:%|percent)?$", cmd)
+		if m:
+			verb = m.group(1).lower()
+			device_phrase = m.group(2).strip()
+			level = int(m.group(3))
+
+			if verb.startswith("bright"):
+				return  self.handle_set_level1(device_phrase, level)
+
+			if verb in ("dim", "darken"):
+				return  self.handle_set_level1(device_phrase, level)
+
+		# LEVEL: "set" is optional; percent marker is optional (% or the word "percent")
+		# Examples:
+		#   set den lamp to 60%
+		#   den lamp to 60
+		#   den lamp to 60 percent
+		m = re.match(r"^(?:set\s+)?(.+?)\s+to\s+(\d+)\s*(?:%|percent)?$", cmd)
+		if m:
+			return self.handle_set_level1(m.group(1).strip(), int(m.group(2)))
+		return False
+
+	def handle_set_level1(self, device_phrase: str, level: str) -> bool:
+
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"handle_set_level1  dev {device_phrase}, level:{level}%")
 		device_phrase = self.normalize_device_phrase(device_phrase)
 		dev = self.find_device_by_name_fragment(device_phrase)
 		if not dev:
@@ -969,37 +1073,51 @@ class Plugin(indigo.PluginBase):
 		level = max(0, min(100, int(level)))
 
 		if self.device_is_dimmable(dev):
-			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Setting '{dev.name}' to {level}%")
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Setting dev '{dev.name}' to {level}%")
 			try:
 				indigo.dimmer.setBrightness(dev.id, value=level)
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 			except	Exception as e:
 				if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
+				return False
 			return True
 
 		# relay fallback: >0 => ON, 0 => OFF
 		if level == 0:
-			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Setting '{dev.name}' to 0% (relay -> OFF)")
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Setting dev '{dev.name}' to 0% (relay -> OFF)")
 			try:
 				indigo.device.turnOff(dev.id)
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 			except Exception as e:
 				self.indiLOG.log(20,f"Error turning off '{dev.name}': {e}")
 		else:
-			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Setting '{dev.name}' to {level}% (relay -> ON)")
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Setting dev '{dev.name}' to {level}% (relay -> ON)")
 			try:
 				indigo.device.turnOn(dev.id)
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 			except	Exception as e:
 				if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
-		
+				return False
 			return True
+
+		return False
 	
-	def handle_turn_on_off(self, device_phrase: str, state: str) -> bool:
+	def handle_turn_on_off(self, cmd: str) -> bool:
+	
+		m = re.match(r"^turn\s+(on|off)\s+(?:the\s+)?(.+)$", cmd)
+		if not m: return False
+		
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"handle_turn_on_off  m:{m.groups()}")
+		device_phrase = m.group(2).strip()
+		state = m.group(1).strip()
+		
 		device_phrase = self.normalize_device_phrase(device_phrase)
 		dev = self.find_device_by_name_fragment(device_phrase)
 		if not dev:
 			if self.decideMyLog("BadMessage"): self.indiLOG.log(20,f"No device found matching '{device_phrase}'")
 			return False
 
-		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Turning {state} '{dev.name}'")
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Turning dev '{dev.name}' to  {state}")
 
 		try:
 			if state == "on":
@@ -1012,54 +1130,133 @@ class Plugin(indigo.PluginBase):
 					indigo.dimmer.setBrightness(dev.id, value=0)
 				else:
 					indigo.device.turnOff(dev.id)
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+			return True
+			
+		except	Exception as e:
+			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
+			
+		return False
+	
+	
+	def handle_toggle(self, cmd: str) -> bool:
+	
+		m = re.match(r"^toggle\s+(?:the\s+)?(.+)$", cmd)
+		if not m: return False
+		
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"handle_toggle  m:{m.groups()}")
+		device_phrase = m.group(1)
+		device_phrase = self.normalize_device_phrase(device_phrase)
+		dev = self.find_device_by_name_fragment(device_phrase)
+		if not dev:
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20,f"No device found matching '{device_phrase}'")
+			return False
+
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"toggle dev '{dev.name}'")
+
+		try:
+			indigo.device.toggle(dev.id)
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+		except	Exception as e:
+			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
+
+		return True
+
+	
+	def handle_set_heat(self, cmd: str) -> bool:
+	
+		pos = cmd.find("set heat set point ")
+		if pos == 0:
+			rest = cmd.split("set heat set point ")[1]
+		else:
+			pos = cmd.find("set heat ")
+			if pos == 0:
+				rest = cmd.split("set heat ")[1]
+
+		if pos < 0: return False
+		m = rest.split(" to ")
+		if len(m) != 2: return False
+				
+		device_phrase = m[0]
+		level = int( m[1].split(" ")[0] )  
+
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"handle_set_heat  m:{m}")
+		device_phrase = self.normalize_device_phrase(device_phrase)
+		dev = self.find_device_by_name_fragment(device_phrase)
+		if not dev:
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20,f"No device found matching '{device_phrase}'")
+			return False
+
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"handle_set_heat dev '{dev.name}' to {level} º")
+
+		try:
+			indigo.thermostat.setHeatSetpoint(dev.id, value=int(level))
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+		except	Exception as e:
+			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
+			return False
+
+		return True
+	
+	
+	def handle_set_cool(self, cmd: str) -> bool:
+	
+		pos = cmd.find("set cool set point ")
+		if pos == 0:
+			rest = cmd.split("set cool set point ")[1]
+		else:
+			pos = cmd.find("set cool ")
+			if pos == 0:
+				rest = cmd.split("set cool ")[1]
+		
+		if pos < 0: return False
+
+		m = rest.split(" to ")
+		if len(m) != 2: return False
+
+		device_phrase = m[0]
+		level = int( m[1].split(" ")[0] )  
+	
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"handle_set_cool m:{m}")
+		device_phrase = self.normalize_device_phrase(device_phrase)
+		dev = self.find_device_by_name_fragment(device_phrase)
+		if not dev:
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20,f"No device found matching '{device_phrase}'")
+			return False
+
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"handle_set_cool dev '{dev.name}' to {level} º")
+
+		try:
+			indigo.thermostat.setCoolSetpoint(dev.id, value=int(level))
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 		except	Exception as e:
 			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
 
 		return True
 	
+
 	def try_pattern_commands(self, cmd: str) -> bool:
 		try:
 			state = "none"
 			cmd = re.sub(r"\s+", " ", cmd.strip())
-			if self.decideMyLog("Logic"):		self.indiLOG.log(20,f"try_pattern_commands {cmd} ")
+			if self.decideMyLog("Logic"): self.indiLOG.log(20,f"try_pattern_commands {cmd} ")
+
+			if self.handle_turn_on_off(cmd): return True
 	
-			m = re.match(r"^turn\s+(on|off)\s+(?:the\s+)?(.+)$", cmd)
-			if m:
-				if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"try_pattern_commands onOff  m:{m.groups()}")
-				return  self.handle_turn_on_off(m.group(2).strip(), m.group(1))
-	
-			m = re.match(r"^(?:turn\s+)?(.+?)\s+(on|off)$", cmd)
-			if m:
-				if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"try_pattern_commands 2   m:{m.groups()}")
-				return  self.handle_turn_on_off(m.group(1).strip(), m.group(2))
-	
-			# VERB LEVEL FIRST (so "brighten/dim ..." doesn't get swallowed)
-			m = re.match(r"^(\w+)\s+(.+?)\s+to\s+(\d+)\s*(?:%|percent)?$", cmd)
-			if m:
-				if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"try_pattern_commands 3  m:{m.groups()}")
-				verb = m.group(1).lower()
-				device_phrase = m.group(2).strip()
-				level = int(m.group(3))
-	
-				if verb.startswith("bright"):
-					return  self.handle_set_level(device_phrase, level)
-	
-				if verb in ("dim", "darken"):
-					return  self.handle_set_level(device_phrase, level)
-	
-			# LEVEL: "set" is optional; percent marker is optional (% or the word "percent")
-			# Examples:
-			#   set den lamp to 60%
-			#   den lamp to 60
-			#   den lamp to 60 percent
-			m = re.match(r"^(?:set\s+)?(.+?)\s+to\s+(\d+)\s*(?:%|percent)?$", cmd)
-			if m:
-				if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"try_pattern_commands 4   m:{m.groups()}")
-				return self.handle_set_level(m.group(1).strip(), int(m.group(2)))
-	
+			if self.handle_toggle(cmd): return  True
+
+			if self.handle_set_heat(cmd): return  True
+
+			if self.handle_set_cool(cmd): return  True
+
+			if self.handle_set_level(cmd): return  True
+
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_bad)
 			return False
 		except	Exception as e:
 			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
+
+		indigo.variable.updateValue(self.var_name_feedback, value=self.return_bad)
 	
 	def execute_actions_for_command(self, cmd: str):
 	
@@ -1084,6 +1281,7 @@ class Plugin(indigo.PluginBase):
 		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Matched command '{cmd}' → action groups {actionInfo}")
 		try:
 			indigo.actionGroup.execute(actionInfo[0])
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 		except	Exception as e:
 			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
 	
