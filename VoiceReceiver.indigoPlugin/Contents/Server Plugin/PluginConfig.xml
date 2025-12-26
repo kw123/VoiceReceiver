@@ -94,7 +94,14 @@
 		<Label>return text when not successful:</Label>   
 	</Field>
 	<Field id="infoLabel_return_bad" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
-		<Label>send text back to iphone when received message can not be interpreted  successfully</Label>  
+		<Label>return text when not successful:</Label>   
+	</Field>
+
+	<Field id="return_silent"    type="textfield"   > 
+		<Label>silent return   </Label>  
+	</Field>
+	<Field id="infoLabel_return_silent" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>send a blank back to the phone</Label>  
 	</Field>
 
 

@@ -1,3 +1,16 @@
+changes in V2022.2.1 2025-12-26
+==================  
+
+added several functions:
+- silence
+- set var value
+- get var value
+- get dev / stave value
+- beep device
+- unlock device
+- lock device
+- set speed 
+
 changes in V2022.1.1 2025-12-25
 ==================  
 

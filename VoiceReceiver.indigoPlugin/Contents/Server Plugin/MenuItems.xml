@@ -9,7 +9,7 @@
 
 
 	<MenuItem id="selectActions">
-		<Name>Define Actions</Name>
+		<Name>Define Actions to be enabled / disabled</Name>
 		<ConfigUI>
 			<Field id="lab1" type="label">
 				<Label>Define indigo actions and action ID to be enabled / removed </Label>
@@ -27,7 +27,7 @@
 			</Field>
 			
            <Field id="actionadd" type="menu" defaultValue="" >
-				<List class="self" filter = "0" method="filterActions" dynamicReload="true" />
+				<List class="self" filter = "add" method="filterActions" dynamicReload="true" />
 				<Label>Select Action to be enabled to be added:</Label>
 			</Field>
 			
@@ -38,7 +38,7 @@
 			</Field>
 			
            <Field id="actiondel" type="menu" defaultValue="def" >
-				<List class="self" filter = "2" method="filterActions" dynamicReload="true" />
+				<List class="self" filter = "remove" method="filterActions" dynamicReload="true" />
 				<Label>Select Action to be deleted:</Label>
 			</Field>
 			<Field id="xactionsdel" type="button">
@@ -49,25 +49,26 @@
 
 		</ConfigUI>
 	</MenuItem>
-	<MenuItem id="synomymes">
-		<Name>Define Synonymes</Name>
+
+	<MenuItem id="synomymesActions">
+		<Name>Define Action Synonymes</Name>
 		<ConfigUI>
 			<Field id="lab1" type="label">
-				<Label>Define synonyms for actions: Here you can define short commands for long named indigo actions </Label>
+				<Label>Define synonyms for actions: Here you can define short phrases for long named indigo actions </Label>
 			</Field>
 			
-           <Field id="action" type="menu" defaultValue="" >
-				<List class="self" filter = "-1" method="filterActions" dynamicReload="true" />
+           <Field id="id" type="menu" defaultValue="" >
+				<List class="self" filter = "synonymes" method="filterActions" dynamicReload="true" />
 				<Label>Select Action to be enabled to be used:</Label>
 			</Field>
-           <Field id="synonymAdd" type="textfield" defaultValue="" >
+           <Field id="add" type="textfield" defaultValue="" >
 				<Label>define synonym for this action</Label>
 			</Field>
 			
-			<Field id="addSynonym" type="button">
+			<Field id="addexec" type="button">
 				<Label>After selection click</Label>
 				<Title>ADD</Title>
-				<CallbackMethod>defineSynonymActionCallback</CallbackMethod>
+				<CallbackMethod>addSynonymActionCallback</CallbackMethod>
 			</Field>
 
 			
@@ -75,20 +76,98 @@
 				<Label>define synonym to be removed</Label>
 			</Field>
 			
-            <Field id="synRemove" type="menu" defaultValue="" >
+            <Field id="remove" type="menu" defaultValue="" >
 				<List class="self"  method="filterSynonymesActions" dynamicReload="true" />
+				<Label>Select synonym:</Label>
+			</Field>
+			
+			<Field id="removeexec" type="button">
+				<Label>After selection click</Label>
+				<Title>REMOVE</Title>
+				<CallbackMethod>removeSynonymActionCallback</CallbackMethod>
+			</Field>
+		</ConfigUI>
+	</MenuItem>
+
+	<MenuItem id="synomymesDevices">
+		<Name>Define Device Synonymes</Name>
+		<ConfigUI>
+			<Field id="lab1" type="label">
+				<Label>Define synonyms for devices: Here you can define short commands for long named indigo devices </Label>
+			</Field>
+           <Field id="id" type="menu" defaultValue="" >
+				<List class="self" filter = "synonymes" method="filterDevices" dynamicReload="true" />
+				<Label>Select Device to be enabled to be used:</Label>
+			</Field>
+           <Field id="add" type="textfield" defaultValue="" >
+				<Label>define synonym for this device</Label>
+			</Field>
+			
+			<Field id="addexec" type="button">
+				<Label>After selection click</Label>
+				<Title>ADD</Title>
+				<CallbackMethod>addSynonymDeviceCallback</CallbackMethod>
+			</Field>
+
+			
+ 			<Field id="lab2" type="label">
+				<Label>define synonym to be removed</Label>
+			</Field>
+			
+            <Field id="remove" type="menu" defaultValue="" >
+				<List class="self"  method="filterSynonymesDevices" dynamicReload="true" />
+				<Label>Select synonym:</Label>
+			</Field>
+			
+			<Field id="removeexec" type="button">
+				<Label>After selection click</Label>
+				<Title>REMOVE</Title>
+				<CallbackMethod>removeSynonymDeviceCallback</CallbackMethod>
+			</Field>
+	
+		</ConfigUI>
+	</MenuItem>
+
+	<MenuItem id="synomymesVariables">
+		<Name>Define Variable Synonymes</Name>
+		<ConfigUI>
+			<Field id="lab1" type="label">
+				<Label>Define synonyms for variables: Here you can define short commands for long named indigo variables </Label>
+			</Field>
+           <Field id="id" type="menu" defaultValue="" >
+				<List class="self" filter = "synonymes" method="filterVariables" dynamicReload="true" />
+				<Label>Select Variable to be enabled to be used:</Label>
+			</Field>
+           <Field id="add" type="textfield" defaultValue="" >
+				<Label>define synonym for this variable</Label>
+			</Field>
+			
+			<Field id="addexec" type="button">
+				<Label>After selection click</Label>
+				<Title>ADD</Title>
+				<CallbackMethod>addSynonymVariableCallback</CallbackMethod>
+			</Field>
+
+			
+ 			<Field id="lab2" type="label">
+				<Label>define synonym to be removed</Label>
+			</Field>
+			
+            <Field id="remove" type="menu" defaultValue="" >
+				<List class="self"  method="filterSynonymesVariables" dynamicReload="true" />
 				<Label>Select synonym :</Label>
 			</Field>
 			
-			<Field id="removeSynonymAction" type="button">
+			<Field id="removeexec" type="button">
 				<Label>After selection click</Label>
 				<Title>REMOVE</Title>
-				<CallbackMethod>removeSynonymCallback</CallbackMethod>
+				<CallbackMethod>removeSynonymVariableback</CallbackMethod>
 			</Field>
-
-
+	
 		</ConfigUI>
 	</MenuItem>
+
+	
 	
 	<MenuItem id="badGood">
 		<Name>Define mapping of phrases </Name>

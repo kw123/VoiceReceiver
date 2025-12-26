@@ -36,6 +36,7 @@ _defaultDateStampFormat = "%Y-%m-%d %H:%M:%S"
 _defaultDateOnlyStampFormat = "%Y-%m-%d"
 _defaultTimeStampFormat = "%H:%M:%S"
 
+_mapNumbertextToInt = {"null":0, "one":1, "two":2, "three":3, "four":4, "five":5, "six":6, "seven":7, "eight":8, "nine":9}
 
 ######### set new  pluginconfig defaults
 # this needs to be updated for each new property added to pluginProps. 
@@ -50,6 +51,7 @@ kDefaultPluginPrefs = {
 	"blocked_device_words":					"alarm|lock",
 	"return_ok":							"ok",
 	"return_bad":							"not sucessful",
+	"return_silent":						False,
 	"use_fragments_to_dermine_device":			False,
 	"list_devices_max":							300,
 	"ShowDebug":								False,
@@ -208,7 +210,9 @@ class Plugin(indigo.PluginBase):
 			if test != {}:
 				self.actions = test
 
-			self.synonymes_for_actions  = self.readJson(self.indigoPreferencesPluginDir+"synonymes_for_actions.json", defReturn={})
+			self.synonymes_for_actions    = self.readJson(self.indigoPreferencesPluginDir+"synonymes_for_actions.json", defReturn={})
+			self.synonymes_for_devices    = self.readJson(self.indigoPreferencesPluginDir+"synonymes_for_devices.json", defReturn={})
+			self.synonymes_for_variables  = self.readJson(self.indigoPreferencesPluginDir+"synonymes_for_variables.json", defReturn={})
 
 			self.map_from_to = {
 					"hieu": "hue",
@@ -242,7 +246,9 @@ class Plugin(indigo.PluginBase):
 
 			self.return_ok = self.pluginPrefs.get("return_ok", kDefaultPluginPrefs["return_ok"])	
 			self.return_bad = self.pluginPrefs.get("return_bad", kDefaultPluginPrefs["return_bad"])	
+			self.return_silent = self.pluginPrefs.get("return_silent", kDefaultPluginPrefs["return_silent"])	
 			
+	
 			self.var_name_feedback = self.pluginPrefs.get("var_name_feedback", kDefaultPluginPrefs["var_name_feedback"])	
 			try:    indigo.variable.create(self.var_name_feedback,  "", self.folder_name)
 			except: pass
@@ -267,15 +273,17 @@ class Plugin(indigo.PluginBase):
 		return xx
 		
 	####-----------------  ---------
+	#### good bad words 
+	####-----------------  ---------
 	def blockWordsCallback(self, valuesDict=None , typeId=""):
-		#self.indiLOG.log(20,f"blockWordsCallback {valuesDict}")
+		#self.indiLOG.log(20, f"blockWordsCallback {valuesDict}")
 		self.blocked_device_words = valuesDict["blocked_device_words"].split("|")
 		self.writeJson({"blocked_device_words":self.blocked_device_words}, fName=self.indigoPreferencesPluginDir + "blocked_device_words.json", sort = True, doFormat=True, singleLines= False )
 
 
 	####-----------------  ---------
 	def addFromCallback(self, valuesDict=None , typeId=""):
-		#self.indiLOG.log(20,f"selectActionsCallback {valuesDict}")
+		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
 		bad = valuesDict["from"]
 		good = valuesDict["to"]
 		if bad not in self.map_from_to:
@@ -284,7 +292,7 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------  ---------
 	def addFromCallback(self, valuesDict=None , typeId=""):
-		#self.indiLOG.log(20,f"selectActionsCallback {valuesDict}")
+		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
 		bad = valuesDict["from"]
 		good = valuesDict["to"]
 		if bad not in self.map_from_to:
@@ -297,37 +305,37 @@ class Plugin(indigo.PluginBase):
 		bad = valuesDict["fromRemove"]
 		if bad in self.map_from_to:
 			del self.map_from_to[bad]
-		self.indiLOG.log(20,f"removeFromCallback {bad}  {self.map_from_to}")
+		self.indiLOG.log(20, f"removeFromCallback {bad}  {self.map_from_to}")
 		self.writeJson(self.map_from_to, fName=self.indigoPreferencesPluginDir + "map_from_to.json", sort = True, doFormat=True, singleLines= False )
 
 
-####-------------------------------------------------------------------------####
-	def filterFromTo(self, filter="", valuesDict=None , typeId=None):
+	####-----------------  ---------
+	#### define actions to be enabled  / removed
+	####-----------------  ---------
+	def actionNumberConfirmCallback(self, valuesDict=None, typeId=""):
+		self.actionNumber = int(valuesDict["actionNumber"])
+		self.actionId = 0
 		xList = []
 	
 		for bad in self.map_from_to:
 			xList.append([bad, bad])
-		#self.indiLOG.log(20,f"filterWords xList: {xList}")
+		#self.indiLOG.log(20, f"filterWords xList: {xList}")
 		return xList
 
-
-	####-----------------  ---------
 	def addActionsCallback(self, valuesDict=None , typeId=""):
-		#self.indiLOG.log(20,f"selectActionsCallback {valuesDict}")
+		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
 		if self.actionNumber == 0: return 
-		actionId = int(valuesDict["actionadd"])
+		actionId = int(valuesDict["add"])
 
 		definedAction = indigo.actionGroups[actionId].name
 		self.actions[definedAction] = [actionId, self.actionNumber]
-		#self.indiLOG.log(20,f"selectActionsCallback actionId:  {actionId}, :{definedAction}, {self.actions}")
-				
+		#self.indiLOG.log(20, f"selectActionsCallback actionId:  {actionId}, :{definedAction}, {self.actions}")
 					
 		self.writeJson(self.actions, fName=self.indigoPreferencesPluginDir + "actions.json", sort = True, doFormat=True, singleLines= False )
 
 
-	####-----------------  ---------
 	def delActionsCallback(self, valuesDict=None , typeId=""):
-		s#elf.indiLOG.log(20,f"delActionsCallback {valuesDict}")
+		s#elf.indiLOG.log(20, f"delActionsCallback {valuesDict}")
 		if self.actionNumber == 0: return 
 		
 		delAction = -1
@@ -336,47 +344,157 @@ class Plugin(indigo.PluginBase):
 				delAction = definedAction
 				break
 				
-		#self.indiLOG.log(20,f"delActionsCallback  actionNumber: {self.actionNumber}, delAction:{delAction},")
+		#self.indiLOG.log(20, f"delActionsCallback  actionNumber: {self.actionNumber}, delAction:{delAction},")
 		if delAction == -1: return 
 		del self.actions[definedAction]
 		self.writeJson(self.actions, fName=self.indigoPreferencesPluginDir + "actions.json", sort = True, doFormat=True, singleLines= False )
 
 
-
 	####-----------------  ---------
-	def defineSynonymActionCallback(self, valuesDict=None , typeId=""):
-		#self.indiLOG.log(20,f"selectActionsCallback {valuesDict}")
-		actionId = valuesDict["action"]
-		synonym = valuesDict["synonymAdd"]
-		if synonym not in self.synonymes_for_actions:
-			self.synonymes_for_actions[synonym] = actionId
-		self.writeJson(self.synonymes_for_actions, fName=self.indigoPreferencesPluginDir + "synonymes_for_actions.json", sort = True, doFormat=True, singleLines= False )
-
-
+	#### define synonymes for actions
 	####-----------------  ---------
-	def removeSynonymActionCallback(self, valuesDict=None , typeId=""):
-		s#elf.indiLOG.log(20,f"selectActionsCallback {valuesDict}")
-		synonym = valuesDict["synRemove"]
-		if synonym in self.synonymes_for_actions:
-			del self.synonymes_for_actions[synonym]
-		self.writeJson(self.synonymes_for_actions, fName=self.indigoPreferencesPluginDir + "synonymes_for_actions.json", sort = True, doFormat=True, singleLines= False )
-
-
-	####-----------------  ---------
-	def actionNumberConfirmCallback(self, valuesDict=None, typeId=""):
-		self.actionNumber = int(valuesDict["actionNumber"])
-		self.actionId = 0
-
-
+	def filterActions(self, filter="", valuesDict=None , typeId=None):
+		# also used to enable and disable actions 
+		xList = []
 	
+
+		if filter  == "synonymes":
+			for action in self.actions:
+				xList.append([self.actions[action][0], action])
+			return xList
+
+		if self.actionNumber == 0: return xList
+
+		if filter == "remove":
+			for action in self.actions:
+				nn = self.actions[action][1]
+				if nn == self.actionNumber:
+					xList.append(["0",action])
+					break
+			#self.indiLOG.log(20, f"filterActions {xList}")
+			return xList
+
+
+		if filter == "add":
+			for action in indigo.actionGroups.iter(self.pluginId):
+				name = action.name
+				actionN = action.id
+				#self.indiLOG.log(20, f"action: {name}, {actionN}")
+				if name not in self.actions:
+					xList.append([action.id, name])
+					continue
+							
+		#self.indiLOG.log(20, f"filterActions xList: {xList}")
+		return xList
+
 ####-------------------------------------------------------------------------####
 	def filterSynonymesActions(self, filter="", valuesDict=None , typeId=None):
 		xList = []
 	
 		for syn in self.synonymes_for_actions:
 			xList.append([syn, syn])
-		#self.indiLOG.log(20,f"filterSynonymes xList: {xList}")
+		#self.indiLOG.log(20, f"filterSynonymes xList: {xList}")
 		return xList
+
+	def addSynonymActionCallback(self, valuesDict=None , typeId=""):
+		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		id = valuesDict["id"]
+		synonym = valuesDict["add"]
+		if synonym not in self.synonymes_for_actions:
+			self.synonymes_for_actions[synonym] = id
+		self.writeJson(self.synonymes_for_actions, fName=self.indigoPreferencesPluginDir + "synonymes_for_actions.json", sort = True, doFormat=True, singleLines= False )
+
+
+	####-----------------  ---------
+	def removeSynonymActionCallback(self, valuesDict=None , typeId=""):
+		s#elf.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		synonym = valuesDict["remove"]
+		if synonym in self.synonymes_for_actions:
+			del self.synonymes_for_actions[synonym]
+		self.writeJson(self.synonymes_for_actions, fName=self.indigoPreferencesPluginDir + "synonymes_for_actions.json", sort = True, doFormat=True, singleLines= False )
+
+
+	####-----------------  ---------
+	#### define synonymes for devices
+	####-----------------  ---------
+	def filterDevices(self, filter="", valuesDict=None , typeId=None):
+		# also used to enable and disable actions 
+		xList = []
+	
+		for dev in indigo.devices.iter():
+			xList.append([dev.id, dev.name])
+			continue
+							
+		#self.indiLOG.log(20, f"filterActions xList: {xList}")
+		return xList
+
+	def filterSynonymesDevices(self, filter="", valuesDict=None , typeId=None):
+		xList = []
+	
+		for syn in self.synonymes_for_devices:
+			xList.append([syn, syn])
+		#self.indiLOG.log(20, f"filterSynonymes xList: {xList}")
+		return xList
+
+	def addSynonymDeviceCallback(self, valuesDict=None , typeId=""):
+		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		id = valuesDict["id"]
+		synonym = valuesDict["add"]
+		if synonym not in self.synonymes_for_devices:
+			self.synonymes_for_devices[synonym] = id
+		self.writeJson(self.synonymes_for_devices, fName=self.indigoPreferencesPluginDir + "synonymes_for_devices.json", sort = True, doFormat=True, singleLines= False )
+
+
+	####-----------------  ---------
+	def removeSynonymDeviceCallback(self, valuesDict=None , typeId=""):
+		s#elf.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		synonym = valuesDict["remove"]
+		if synonym in self.synonymes_for_devices:
+			del self.synonymes_for_devices[synonym]
+		self.writeJson(self.synonymes_for_devices, fName=self.indigoPreferencesPluginDir + "synonymes_for_devices.json", sort = True, doFormat=True, singleLines= False )
+
+
+	####-----------------  ---------
+	#### define synonymes for variables
+	####-----------------  ---------
+	def filterVariables(self, filter="", valuesDict=None , typeId=None):
+		# also used to enable and disable actions 
+		xList = []
+	
+		for var in indigo.variables.iter():
+			xList.append([var.id, var.name])
+			continue
+							
+		#self.indiLOG.log(20, f"filterActions xList: {xList}")
+		return xList
+		
+	def filterSynonymesVariables(self, filter="", valuesDict=None , typeId=None):
+		xList = []
+	
+		for syn in self.synonymes_for_variables:
+			xList.append([syn, syn])
+		#self.indiLOG.log(20, f"filterSynonymes xList: {xList}")
+		return xList
+
+	def addSynonymVariableCallback(self, valuesDict=None , typeId=""):
+		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		id = valuesDict["id"]
+		synonym = valuesDict["add"]
+		if synonym not in self.synonymes_for_variables:
+			self.synonymes_for_variables[synonym] = id
+		self.writeJson(self.synonymes_for_variables, fName=self.indigoPreferencesPluginDir + "synonymes_for_variables.json", sort = True, doFormat=True, singleLines= False )
+
+
+	####-----------------  ---------
+	def removeSynonymVariableCallback(self, valuesDict=None , typeId=""):
+		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		synonym = valuesDict["remove"]
+		if synonym in self.synonymes_for_variables:
+			del self.synonymes_for_variables[synonym]
+		self.writeJson(self.synonymes_for_variables, fName=self.indigoPreferencesPluginDir + "synonymes_for_variables.json", sort = True, doFormat=True, singleLines= False )
+
+
+	
 	
 ####-------------------------------------------------------------------------####
 	def filternumbers_1_100(self, filter="", valuesDict=None , typeId=None):
@@ -388,44 +506,6 @@ class Plugin(indigo.PluginBase):
 
 	
 
-	
-####-------------------------------------------------------------------------####
-	def filterActions(self, filter="", valuesDict=None , typeId=None):
-		xList = []
-		
-		UiValuesDict = valuesDict.get("UiValuesDict",{})
-		#self.indiLOG.log(20,f"filterActions {filter}, {UiValuesDict}")
-		#self.indiLOG.log(20,f"filterActions {self.actions}")
-		
-		if self.actionNumber == 0: return xList
-
-		filt = int(filter)
-		
-		if filt  == -1:
-			for action in self.actions:
-				xList.append([self.actions[action][0], action])
-			return xList
-
-		if filt == 2:
-			for action in self.actions:
-				nn = self.actions[action][1]
-				if nn == self.actionNumber:
-					xList.append(["0",action])
-					break
-			#self.indiLOG.log(20,f"filterActions {xList}")
-			return xList
-
-
-		for action in indigo.actionGroups.iter(self.pluginId):
-			name = action.name
-			actionN = action.id
-			#self.indiLOG.log(20,f"action: {name}, {actionN}")
-			if name not in self.actions:
-				xList.append([action.id, name])
-				continue
-							
-		#self.indiLOG.log(20,f"filterActions xList: {xList}")
-		return xList
 
 
 	####-----------------	 ---------
@@ -452,9 +532,13 @@ class Plugin(indigo.PluginBase):
 			out += '\n'
 			out += '\n'
 			out += '================================ INSTALL ===========================\n'
-			out += 'In plugin define the configurations in plugin config and menu\n'
+			out += '(A) In plugin define the configurations in plugin config and menu\n'
 			out += '\n'
-			out += '=== Create shortcut on iPhone with the following items: ====\n'
+			out += '(B) === Create shortcut on iPhone with the following items: ====\n'
+			out += '  you can download a shortcut with empty keys etc at https://www.icloud.com/shortcuts/afc43a0555e04fbfa5b26f2953b3e274\n'
+			out += '   then replace the bearer key, your indigo variable ids (2), the local ip of you indigo server, and the the first part of the iphone local wifi ip # to detect if you are at home   \n'
+			out += '\n'
+			out += '= manual creation:\n'
 			out += '1. Dismiss Siri and Continue                                         to shorten pause \n'
 			out += '2. Dictate text                                                      this is where the voice gets recorded\n'
 			out += '3. Current Date                                                      create date object  \n'
@@ -499,68 +583,89 @@ class Plugin(indigo.PluginBase):
 			out += '9.5  speak Dictionary value                                          this will speak the reslt send back from the plugin ok/ bad\n'
 			out += '10. name it eg "indigo" \n'
 			out += '11. share to desktop\n'
-			out += '12. save\n'
-			out += '=== END create shortcut on iPhone with the following items: ====\n'
+			out += '12. \n'
+			out += '=== END create shortcut  ...  ====\n'
 			out += '\n'
-			out += '13.  if you have a light named office lights:  \n'
-			out += '14.  speaking "hey Siri Indigo" pause "turn on office lights"  \n'
-			out += '15.  should turn on office lights  \n'
+			out += '13. speaking "hey Siri Indigo" pause "turn on office lights"  \n'
+			out += '    you could also define eg "hey indigo do" as hey siri replacement for this shortcut:   \n'
+			out += '     settings / Accessibility  / voval short cuts / add action / select yor shorcut say "hey indigo do" 3 times  save  \n'
+			out += '14. if you have a light named office lights:  \n'
+			out += '     "hey indigo do"  pause  "turn on office lights"  should turn on your office lights    \n'
+			out += '\n'
 			out += '\n'
 			out += '====  commands ====================================================\n'
-			out += '   turn on/off device_name  \n'
-			out += '   toggle device_name  \n'
-			out += '   set device to xx percent  (xx = 0..100)                            for dimmers\n'
-			out += '   set device_name to xx    (xx = 0..100)                             for dimmers\n'
-			out += '   (set) set heat point device to degrees                             for thermostates\n'
-			out += '   set heat device to degrees                                         for thermostates\n'
-			out += '   (set) set cool point device to degrees                             for thermostates\n'
-			out += '   set cool device to degrees                                         for thermostates\n'
+			out += '   substitute <device> with device name or synonym   \n'
+			out += '   substitute <variable> with variable name or synonym   \n'
+			out += '   substitute <state> with state name  \n'
+			out += '   set variable <variable> to value                                  write value to variable\n'
+			out += '   get variable <variable>                                           get var value and speak it\n'
+			out += '   get <device> state <state>                                        get dev/state value and speak it\n'
+			out += '                                                                     notice the differnce to get variable \n'
+			out += '   speed <device> to xx                                              for fans; (0-4 or 100)  one, two mapped to 1, 2\n'
+			out += '   beep <device>  \n'
+			out += '   lock <device>  \n'
+			out += '   unlock <device>  \n'
+			out += '   turn on/off <device>                                              \n'
+			out += '   toggle <device>  \n'
+			out += '   heat <device> to degrees                                          for thermostates\n'
+			out += '   cool <device> to degrees                                          for thermostates\n'
+			out += '   bright(en) <device> to xx (percent)                                   for dimmers, brightness (xx = 0..100)  \n'
 			out += '   action_name  (name and action id must be set in menu)  \n'
-			out += '   set device_name to xx and action_name and  set device2_name on     will execute 3 commands  \n'
+			out += '\n'
+			out += '   bright <device> to xx and <action> and  turn on <device2>         will execute 3 commands  \n'
+			out += '   the execution is checked in the sequence to make sure that they are not ambigous\n'
 			out += '\n'
 			out += '=== meta commands ==================================================\n'
-			out += '  list devices                                                        will print add devices to logfile  \n'
-			out += '  list actions   or  what can you do                                  will print all defined  ndigo actions setup in this plugin \n'
-			out += '  debug on                                                            will enable debug all \n'
-			out += '  debug off                                                           will disable debug all \n'
-			out += '  test                                                                will print "test" to logfile \n'
-			out += '  help                                                                will print this to logfile \n'
-			out += ' upper and lower cases in commands are ignored\n'
+			out += '  list devices                                                       will print add devices to logfile  \n'
+			out += '  list actions   or  what can you do                                 will print all defined  ndigo actions setup in this plugin \n'
+			out += '  debug on                                                           will enable debug all \n'
+			out += '  debug off                                                          will disable debug all \n'
+			out += '  test                                                               will print "test" to logfile \n'
+			out += '  help                                                               will print this to logfile \n'
+			out += '\n'
+			out += ' upper and lower cases are ignored\n'
 			out += '\n'
 			out += 'in menue you can define:\n'
 			out += '1. action names and ids to be executed \n'
+			out += '1. synonymes for devices, variables, actions \n'
 			out += '2. mappings of bad to good words (eg lamp to lights)  the plugin will replace the bad strings with the good\n'
 			out += '\n'
 			out += '\n'
 			out += '\n =============plugin config Parameters========\n'
-			out += f'allow_delta_time      =  {self.allow_delta_time}\n'
+			out += f'allow_delta_time       = {self.allow_delta_time}\n'
 			out += '                          message must not be older thn current timestamp +  allow_delta_time\n\n'
-			out += f'expect_time_tag       =  {self.expect_time_tag}\n'
+			out += f'expect_time_tag        = {self.expect_time_tag}\n'
 			out += '                          require time stamp value as first work in message\n\n'
-			out += f'use fragments         =  {self.use_fragments_to_dermine_device}\n'
+			out += f'use fragments          = {self.use_fragments_to_dermine_device}\n'
 			out += '                          allow plugin to try to figure out which device was mean if not 100 % match using fragments\n\n'
-			out += f'var_name              =  {self.var_name}\n'
+			out += f'var_name               = {self.var_name}\n'
 			out += '                          name of the variable the plugin will listen to, will be created if it does not exist\n\n'
-			out += f'var_name_feedback     =  {self.var_name_feedback}\n'
-			out += '                         name of the variable the plugin will write reslut to to be pickup by iphone, will be created if it does not exist\n\n'
-			out += f'return string if ok   =  {self.return_ok}\n'
-			out += '                         string written to variable_feedback if execution is ok\n\n'
-			out += f'return string if bad  =  {self.return_bad}\n'
-			out += '                         string written to variable_feedback if execution is not ok\n\n'
-			out += f'folder_name           =  {self.folder_name}\n'
-			out += '                         folder name of the variables, will be created if it does not exist\n\n'
-			out += f'blocked_device_words  =  {self.blocked_device_words}\n'
+			out += f'var_name_feedback      = {self.var_name_feedback}\n'
+			out += '                          name of the variable the plugin will write reslut to to be pickup by iphone, will be created if it does not exist\n\n'
+			out += f'return string if ok    = {self.return_ok}\n'
+			out += '                          string written to variable_feedback if execution is ok\n\n'
+			out += f'return string if bad   = {self.return_bad}\n'
+			out += '                          string written to variable_feedback if execution is not ok\n\n'
+			out += f'return silent          = {self.return_silent}\n'
+			out += '                          return a blank to iphone \n\n'
+			out += f'folder_name            = {self.folder_name}\n'
+			out += '                          folder name of the variables, will be created if it does not exist\n\n'
+			out += f'blocked_device_words   = {self.blocked_device_words}\n'
 			out += '                          words that are not allowed for devices and actions eg "alarm", when they are present the whole command is ignored\n\n'
-			out += f'actions               =  {self.actions}\n'
-			out += '                         indigo action names and indigo ids, using {indigo action name:[indigo action id, seq number]} }\n\n'
-			out += f'synonymes for actions =  {self.synonymes_for_actions}\n'
-			out += '                          voice action names and  indigo action ids, using {voice action string:indigo action id}  \n\n'
-			out += f'map_from_to           =  {self.map_from_to}\n'
-			out += '                          bad words to be replaced by good words  using {map voice string : to string to be used} \n\n'
+			out += f'actions                = {self.actions}\n'
+			out += '                          indigo action names and indigo ids, using {indigo action name:[indigo action id, seq number]} }\n\n'
+			out += f'synonymes for actions  = {self.synonymes_for_actions}\n'
+			out += '                           voice action names and  indigo action ids, using {voice action string:indigo action id}  \n\n'
+			out += f'synonymes for devices  = {self.synonymes_for_devices}\n'
+			out += '                           voice device names and  indigo device ids, using {voice device string:indigo device id}  \n\n'
+			out += f'synonymes for variables = {self.synonymes_for_variables}\n'
+			out += '                           voice variable names and  indigo variable ids, using {voice variable string:indigo variable id}  \n\n'
+			out += f'map_from_to            = {self.map_from_to}\n'
+			out += '                           bad words to be replaced by good words  using {map voice string : to string to be used} \n\n'
 			out += '                           eg dor : door  \n\n'
 			out += '                           or tür : door (for the germans)  \n\n'
-			out += f'list devices max      =  {self.list_devices_max}\n'
-			out += '                          list max number of devices when receiving command list devices \n\n'
+			out += f'list devices max       = {self.list_devices_max}\n'
+			out += '                           list max number of devices when receiving command list devices \n\n'
 			out += '\n'
 			self.indiLOG.log(20,out)
 		except	Exception as e:
@@ -756,12 +861,15 @@ class Plugin(indigo.PluginBase):
 		try:
 		
 			if self.var_name != orig_var.name: return 
-			if self.decideMyLog("ReceivdeData"): self.indiLOG.log(20,f"orig_var '{new_var.value}'")
-			indigo.variable.updateValue(self.var_name_feedback, value=self.return_bad)
-	
+			if self.decideMyLog("ReceivdeData"): self.indiLOG.log(20, f"orig_var '{new_var.value}'")
+			if self.return_silent:
+				indigo.variable.updateValue(self.var_name_feedback, value=" ")
+			else:
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_bad)
+				
 			raw = new_var.value
 	
-			if self.decideMyLog("ReceivdeData"):	self.indiLOG.log(20,f"Command received raw: '{raw}'")
+			if self.decideMyLog("ReceivdeData"):	self.indiLOG.log(20, f"Command received raw: '{raw}'")
 	
 			if not raw or not raw.strip():
 				return
@@ -771,16 +879,17 @@ class Plugin(indigo.PluginBase):
 			ok, raw_stripped = self.check_if_time_tag_ok(raw_stripped)
 			if not ok: return 
 	
-			if self.decideMyLog("ReceivdeData"): self.indiLOG.log(20,f"Command received raw, tags removed: '{raw_stripped}'")
+			if self.decideMyLog("ReceivdeData"): self.indiLOG.log(20, f"Command received raw, tags removed: '{raw_stripped}'")
 	
 			cmd =  self.normalize_command(raw_stripped)
 			cmdLower = cmd.lower()
 			
-			if self.decideMyLog("ReceivdeData"):	self.indiLOG.log(20,f"Normalized command: '{cmd}'")
+			if self.decideMyLog("ReceivdeData"):	self.indiLOG.log(20, f"Normalized command: '{cmd}'")
 	
 			if cmdLower in["what can you do","list actions"]:
 				self.log_available_commands()
-				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				if not self.return_silent:
+					indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 				return
 	
 			elif cmdLower == "list devices":
@@ -788,34 +897,49 @@ class Plugin(indigo.PluginBase):
 				return
 	
 			elif cmdLower == "test":
-				self.indiLOG.log(20,f"received command: '{cmd}'")
-				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				self.indiLOG.log(20, f"received command: '{cmd}'")
+				if not self.return_silent:
+					indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 				return
 	
 			elif cmdLower == "debug on":
-				self.indiLOG.log(20,f"received command: '{cmd}'")
+				self.indiLOG.log(20, f"received command: '{cmd}'")
 				self.pluginPrefs["debugAll"] = True
 				self.setDebugFromPrefs(self.pluginPrefs)
-				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				if not self.return_silent:
+					indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 				return
 
 			elif cmdLower == "debug off":
-				self.indiLOG.log(20,f"received command: '{cmd}'")
+				self.indiLOG.log(20, f"received command: '{cmd}'")
 				self.pluginPrefs["debugAll"] = False
-				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				if not self.return_silent:
+					indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 				self.setDebugFromPrefs(self.pluginPrefs)
 
 			elif cmdLower == "help":
-				self.indiLOG.log(20,f"received command: '{cmd}'")
+				self.indiLOG.log(20, f"received command: '{cmd}'")
 				self.printConfig()
-				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				if not self.return_silent:
+					indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				return
+
+			elif cmdLower.find("silence") >-1:
+				self.indiLOG.log(20, f"received command: '{cmd}'")
+				if cmdLower.find(" on") > 5:
+					if not self.return_silent:
+						self.return_silent = True
+						indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				else:
+					self.return_silent = False
+					indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 				return
 	
 	
 			# Compound support: run each sub-command in order
 			sub_cmds =  self.split_compound(cmd)
 			if len(sub_cmds) > 1:
-					if self.decideMyLog("all"):	self.indiLOG.log(20,f"Compound command -> {sub_cmds}")
+					if self.decideMyLog("all"):	self.indiLOG.log(20, f"Compound command -> {sub_cmds}")
 					for sub in sub_cmds:
 						 self.execute_actions_for_command(sub)
 			else:
@@ -876,15 +1000,15 @@ class Plugin(indigo.PluginBase):
 		try:
 				messageTimeNumber = float(messageTime)
 		except:
-			if self.decideMyLog("BadMessage"):	self.indiLOG.log(20,f"Ignoring '{test}'; bad time info, not a number")
+			if self.decideMyLog("BadMessage"):	self.indiLOG.log(20, f"Ignoring '{test}'; bad time info, not a number")
 			return
 		
 		dt = time.time() - messageTimeNumber
 		if dt >  self.allow_delta_time:
-			if self.decideMyLog("BadMessage"):	self.indiLOG.log(20,f"Ignoring '{test}'; time not in allowed window: {dt:.1f}")
+			if self.decideMyLog("BadMessage"):	self.indiLOG.log(20, f"Ignoring '{test}'; time not in allowed window: {dt:.1f}")
 			return False, ""
 			
-		if self.decideMyLog("Logic"):self.indiLOG.log(20,f"accepted  '{test}'; time in allowed window: {dt:.1f}")
+		if self.decideMyLog("Logic"):self.indiLOG.log(20, f"accepted  '{test}'; time in allowed window: {dt:.1f}")
 		
 		return True, test[len(messageTime):].strip()
 	
@@ -921,7 +1045,7 @@ class Plugin(indigo.PluginBase):
 		# if we have perfect match we dont need to loop though all devices to find a match twice
 		if not  self.is_blocked_device_name(fragment):
 			if fragment in indigo.devices:
-				if self.decideMyLog("Logic"): self.indiLOG.log(20,f"find_device_by_name_fragment: use perfect match device: '{fragment}'")
+				if self.decideMyLog("Logic"): self.indiLOG.log(20, f"find_device_by_name_fragment: use perfect match device: '{fragment}'")
 				return indigo.devices[fragment]
 
 		if not self.use_fragments_to_dermine_device: return None
@@ -957,7 +1081,7 @@ class Plugin(indigo.PluginBase):
 			if len(candidates) > 1:
 				names = ", ".join(d.name for d in candidates[:20])
 				suffix = "" if len(candidates) <= 20 else f" (+{len(candidates)-20} more)"
-				if self.decideMyLog("Logic"): self.indiLOG.log(20,f"multiple devices match '{fragment}': {names}{suffix}")
+				if self.decideMyLog("Logic"): self.indiLOG.log(20, f"multiple devices match '{fragment}': {names}{suffix}")
 			return candidates[0]
 
 		# If we only matched blocked devices, say why
@@ -1013,70 +1137,153 @@ class Plugin(indigo.PluginBase):
 	def log_available_commands(self):
 		self.indiLOG.log(20,"Available ACTION commands: that are mapped from voice to actual indigo action groups")
 		for cmd in sorted( self.actions.keys()):
-			self.indiLOG.log(20,f"  {cmd}")
+			self.indiLOG.log(20, f"  {cmd}")
 	
 	def log_devices(self):
 		self.indiLOG.log(20,"Device list (name → normalized) [truncated if large]:")
 		count = 0
 		for dev in indigo.devices:
 			if count >=  self.list_devices_max:
-				self.indiLOG.log(20,f"... truncated at {self.list_devices_max} devices ...")
+				self.indiLOG.log(20, f"... truncated at {self.list_devices_max} devices ...")
 				break
-			self.indiLOG.log(20,f"   {dev.name:55} → {self.normalize_name_for_match(dev.name)}")
+			self.indiLOG.log(20, f"   {dev.name:55} → {self.normalize_name_for_match(dev.name)}")
 			count += 1
 	
 	
 	# ==========================
-	#  ACTION EXECUTION
+	#  device/ var EXECUTION
 	# ==========================
-	
+
+	# utils 	
 	def device_is_dimmable(self, dev) -> bool:
 		try:
 			return ("brightnessLevel" in dev.states) or ("dimLevel" in dev.states)
 		except Exception:
 			return False
 	
+	def check_if_match_devices(self, theName: str):
+		
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20, f"check_if_match_device  theName {theName}")
+
+		if theName in indigo.devices:
+			return indigo.devices[theName]
+
+		theName = self.synonymes_for_devices.get(theName, theName)
+		try: 
+			id = int(theName)
+			if self.decideMyLog("Logic"):	self.indiLOG.log(20, f"check_if_match_devices  id  {theName},  in indigo?:{id in indigo.devices}")
+		except: return None
+		 
+		try:
+			xxx = indigo.devices[int(id)]
+			return xxx
+		except: pass
+		return  None
+
+	def check_if_match_variables(self, theName):
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20, f"check_if_match_variables  theName {theName}")
+		if theName in indigo.variables:
+			return indigo.variables[theName]
+
+		
+		theName = self.synonymes_for_variables.get(theName, theName)
+		try: 
+			id = int(theName)
+			if self.decideMyLog("Logic"):	self.indiLOG.log(20, f"check_if_match_variables  id  {theName},  in indigo?:{id in indigo.variables}")
+		except: return None
+		 
+		try:
+			xxx = indigo.variables[int(id)]
+			return xxx
+		except: pass
+		return  None
+
+	# handle updates
+
+
+	def handle_set_speed(self, cmd: str) -> bool:
+		
+		#  cmd:  (set) speed device to xx
+		pos = cmd.find("speed ")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_speed '{cmd}' speed at pos {pos}")
+		if pos < 0: return False
+		cmd = cmd.split("speed ")[1]
+
+		pos = cmd.find(" to ")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_speed '{cmd}' to at pos {pos}")
+		if pos < 5: return False
+		theName, speed = cmd.split(" to ")
+		dev = self.check_if_match_devices(theName)
+		if not dev:
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No device found matching '{theName}'")
+			return False
+		if "speedLevel" not in dev.states: 
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No device '{theName}' does not have speed control")
+			return False
+		
+		# map speed to a number 
+		if speed in _mapNumbertextToInt:
+			speed = _mapNumbertextToInt[speed]
+		else:
+			try: speed = int(speed)
+			except: pass
+
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_speed found '{theName}' {speed}")
+			
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_speed '{dev.name}' speed {speed}")
+		indigo.speedcontrol.setSpeedIndex(dev.id, value=speed)
+		return True
+
+	
+	# handle updates
 	def handle_set_level(self, cmd: str) -> bool:
 		
-		# VERB LEVEL FIRST (so "brighten/dim ..." doesn't get swallowed)
-		m = re.match(r"^(\w+)\s+(.+?)\s+to\s+(\d+)\s*(?:%|percent)?$", cmd)
-		if m:
-			verb = m.group(1).lower()
-			device_phrase = m.group(2).strip()
-			level = int(m.group(3))
 
-			if verb.startswith("bright"):
-				return  self.handle_set_level1(device_phrase, level)
+		pos = cmd.find("bright")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_level '{cmd}' bright at pos {pos}")
+		if pos < 0: return False
+		cmd = cmd.strip("%")
+		cmd = cmd.strip(" ")
+		pos = cmd.find(" ")
+		cmd = cmd[pos+1:].strip()
+		pos = cmd.find("level ")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_level '{cmd}' level at pos {pos}")
+		if pos == 0: #remove " level "
+			cmd = cmd[len("level "):].strip()
+		
+		cmd1 = cmd.split(" to ")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_level to '{cmd}'")
+		if len(cmd1) == 2:
+			phrase = cmd1[0]
+			level = cmd1[1].strip()
+		else:
+			pos = cmd.rfind(" ")
+			level = cmd[pos+1:].strip()
+			phrase = cmd[:pos].strip()
+			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_level rfind '{pos}'")
 
-			if verb in ("dim", "darken"):
-				return  self.handle_set_level1(device_phrase, level)
+		level = level.strip("%")
+		level = level.strip("percent")
+		if level in _mapNumbertextToInt:
+			level = _mapNumbertextToInt[level]
+		else:
+			try: level = int(level)
+			except: pass
 
-		# LEVEL: "set" is optional; percent marker is optional (% or the word "percent")
-		# Examples:
-		#   set den lamp to 60%
-		#   den lamp to 60
-		#   den lamp to 60 percent
-		m = re.match(r"^(?:set\s+)?(.+?)\s+to\s+(\d+)\s*(?:%|percent)?$", cmd)
-		if m:
-			return self.handle_set_level1(m.group(1).strip(), int(m.group(2)))
-		return False
-
-	def handle_set_level1(self, device_phrase: str, level: str) -> bool:
-
-		if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"handle_set_level1  dev {device_phrase}, level:{level}%")
-		device_phrase = self.normalize_device_phrase(device_phrase)
-		dev = self.find_device_by_name_fragment(device_phrase)
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20, f"handle_set_level1  dev {phrase}, level:{level}%")
+		dev = self.check_if_match_devices(phrase)
 		if not dev:
-			if self.decideMyLog("BadMessage"): self.indiLOG.log(20,f"No device found matching '{device_phrase}'")
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No device found matching '{phrase}'")
 			return False
 
 		level = max(0, min(100, int(level)))
 
 		if self.device_is_dimmable(dev):
-			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Setting dev '{dev.name}' to {level}%")
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"Setting dev '{dev.name}' to {level}%")
 			try:
 				indigo.dimmer.setBrightness(dev.id, value=level)
-				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				if not self.return_silent:
+					indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 			except	Exception as e:
 				if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
 				return False
@@ -1084,40 +1291,105 @@ class Plugin(indigo.PluginBase):
 
 		# relay fallback: >0 => ON, 0 => OFF
 		if level == 0:
-			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Setting dev '{dev.name}' to 0% (relay -> OFF)")
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"Setting dev '{dev.name}' to 0% (relay -> OFF)")
 			try:
 				indigo.device.turnOff(dev.id)
-				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				if not self.return_silent:
+					indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 			except Exception as e:
-				self.indiLOG.log(20,f"Error turning off '{dev.name}': {e}")
+				self.indiLOG.log(20, f"Error turning off '{dev.name}': {e}")
 		else:
-			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Setting dev '{dev.name}' to {level}% (relay -> ON)")
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"Setting dev '{dev.name}' to {level}% (relay -> ON)")
 			try:
 				indigo.device.turnOn(dev.id)
-				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+				if not self.return_silent:
+					indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 			except	Exception as e:
 				if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
 				return False
 			return True
 
 		return False
+
+
+	
+	def handle_unlock(self, cmd: str) -> bool:
+	
+		pos = cmd.find("unlock ")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_unlock '{cmd}'  unlock at pos {pos}")
+		if pos < 0: return False
+		cmd = cmd.split("unlock ")[1]
+
+
+		dev = self.check_if_match_devices(phrase)
+		if not dev:
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No device found matching '{phrase}'")
+			return False
+
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"unlock dev '{dev.name}'")
+		indigo.device.unlock(dev.id)
+		if not self.return_silent:
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+		return True
+
+	
+	def handle_lock(self, cmd: str) -> bool:
+	
+		pos = cmd.find("lock ")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_lock '{cmd}'  lock at pos {pos}")
+		if pos < 0: return False
+		cmd = cmd.split("lock ")[1]
+
+
+		dev = self.check_if_match_devices(phrase)
+		if not dev:
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No device found matching '{phrase}'")
+			return False
+
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"lock dev '{dev.name}'")
+		indigo.device.lock(dev.id)
+		if not self.return_silent:
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+		return True
+			
+	
+	def handle_beep(self, cmd: str) -> bool:
+	
+		pos = cmd.find("beep ")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_beep '{cmd}'  beep at pos {pos}")
+		if pos < 0: return False
+		cmd = cmd.split("beep ")[1]
+
+
+		dev = self.check_if_match_devices(phrase)
+		if not dev:
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No device found matching '{phrase}'")
+			return False
+
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"beep dev '{dev.name}'")
+		indigo.device.beep(dev.id)
+		if not self.return_silent:
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+		return True
+	
 	
 	def handle_turn_on_off(self, cmd: str) -> bool:
 	
-		m = re.match(r"^turn\s+(on|off)\s+(?:the\s+)?(.+)$", cmd)
-		if not m: return False
+		pos = cmd.find("turn")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_lock '{cmd}'  turn at pos {pos}")
+		if pos != 0: return False
+		cmd = cmd[pos+4:].strip()
+		state = cmd.split()[0]
+		phrase = cmd[len(state)+1:].strip()
 		
-		if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"handle_turn_on_off  m:{m.groups()}")
-		device_phrase = m.group(2).strip()
-		state = m.group(1).strip()
-		
-		device_phrase = self.normalize_device_phrase(device_phrase)
-		dev = self.find_device_by_name_fragment(device_phrase)
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_turn_on_off dev {phrase}, state {state}")
+
+		dev = self.check_if_match_devices(phrase)
 		if not dev:
-			if self.decideMyLog("BadMessage"): self.indiLOG.log(20,f"No device found matching '{device_phrase}'")
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No device found matching '{phrase}'")
 			return False
 
-		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Turning dev '{dev.name}' to  {state}")
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"Turning dev '{dev.name}' to  {state}")
 
 		try:
 			if state == "on":
@@ -1130,7 +1402,8 @@ class Plugin(indigo.PluginBase):
 					indigo.dimmer.setBrightness(dev.id, value=0)
 				else:
 					indigo.device.turnOff(dev.id)
-			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+			if not self.return_silent:
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 			return True
 			
 		except	Exception as e:
@@ -1144,19 +1417,19 @@ class Plugin(indigo.PluginBase):
 		m = re.match(r"^toggle\s+(?:the\s+)?(.+)$", cmd)
 		if not m: return False
 		
-		if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"handle_toggle  m:{m.groups()}")
-		device_phrase = m.group(1)
-		device_phrase = self.normalize_device_phrase(device_phrase)
-		dev = self.find_device_by_name_fragment(device_phrase)
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20, f"handle_toggle  m:{m.groups()}")
+		phrase = m.group(1)
+		dev = self.check_if_match_devices(phrase)
 		if not dev:
-			if self.decideMyLog("BadMessage"): self.indiLOG.log(20,f"No device found matching '{device_phrase}'")
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No device found matching '{phrase}'")
 			return False
 
-		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"toggle dev '{dev.name}'")
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"toggle dev '{dev.name}'")
 
 		try:
 			indigo.device.toggle(dev.id)
-			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+			if not self.return_silent:
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 		except	Exception as e:
 			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
 
@@ -1165,33 +1438,29 @@ class Plugin(indigo.PluginBase):
 	
 	def handle_set_heat(self, cmd: str) -> bool:
 	
-		pos = cmd.find("set heat set point ")
-		if pos == 0:
-			rest = cmd.split("set heat set point ")[1]
-		else:
-			pos = cmd.find("set heat ")
-			if pos == 0:
-				rest = cmd.split("set heat ")[1]
+		pos = cmd.find("heat ")
+		if pos >= 0:
+			rest = cmd.split("heat ")[1]
 
 		if pos < 0: return False
 		m = rest.split(" to ")
 		if len(m) != 2: return False
 				
-		device_phrase = m[0]
+		phrase = m[0]
 		level = int( m[1].split(" ")[0] )  
 
-		if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"handle_set_heat  m:{m}")
-		device_phrase = self.normalize_device_phrase(device_phrase)
-		dev = self.find_device_by_name_fragment(device_phrase)
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20, f"handle_set_heat  m:{m}")
+		dev = self.check_if_match_devices(phrase)
 		if not dev:
-			if self.decideMyLog("BadMessage"): self.indiLOG.log(20,f"No device found matching '{device_phrase}'")
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No device found matching '{phrase}'")
 			return False
 
-		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"handle_set_heat dev '{dev.name}' to {level} º")
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_set_heat dev '{dev.name}' to {level} º")
 
 		try:
 			indigo.thermostat.setHeatSetpoint(dev.id, value=int(level))
-			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+			if not self.return_silent:
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 		except	Exception as e:
 			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
 			return False
@@ -1201,46 +1470,125 @@ class Plugin(indigo.PluginBase):
 	
 	def handle_set_cool(self, cmd: str) -> bool:
 	
-		pos = cmd.find("set cool set point ")
-		if pos == 0:
-			rest = cmd.split("set cool set point ")[1]
-		else:
-			pos = cmd.find("set cool ")
-			if pos == 0:
-				rest = cmd.split("set cool ")[1]
+		pos = cmd.find("cool ")
+		if pos >= 0:
+			rest = cmd.split("cool ")[1]
 		
 		if pos < 0: return False
 
 		m = rest.split(" to ")
 		if len(m) != 2: return False
 
-		device_phrase = m[0]
+		phrase = m[0]
 		level = int( m[1].split(" ")[0] )  
 	
-		if self.decideMyLog("Logic"):	self.indiLOG.log(20,f"handle_set_cool m:{m}")
-		device_phrase = self.normalize_device_phrase(device_phrase)
-		dev = self.find_device_by_name_fragment(device_phrase)
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20, f"handle_set_cool m:{m}")
+		dev = self.check_if_match_devices(phrase)
 		if not dev:
-			if self.decideMyLog("BadMessage"): self.indiLOG.log(20,f"No device found matching '{device_phrase}'")
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No device found matching '{phrase}'")
 			return False
 
-		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"handle_set_cool dev '{dev.name}' to {level} º")
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_set_cool dev '{dev.name}' to {level} º")
 
 		try:
 			indigo.thermostat.setCoolSetpoint(dev.id, value=int(level))
-			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+			if not self.return_silent:
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 		except	Exception as e:
 			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
 
 		return True
 	
+	
+	def handle_set_variable(self, cmd: str) -> bool:
+	
+		pos = cmd.find("set variable ")
+		if pos < 0: return False
+		rest = cmd.split("set variable ")[1]
+		if " to " not in rest: return  False
+		phrase , value = rest.split(" to ")
+		numbers = re.findall("\d+", value)
+		
+		if self.decideMyLog("Logic"):	self.indiLOG.log(20, f"handle_set_variable   variable:{phrase}  to {value}")
+		var = self.check_if_match_variables(phrase)
+		if not var:
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No Variable found matching '{phrase}'")
+			return False
+
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"update var '{var.name}' to {value}")
+
+		try:
+			indigo.variable.updateValue(var.name, value=value)
+			if not self.return_silent:
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+		except	Exception as e:
+			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
+			return False
+
+		return True
+
+
+	
+	def handle_get_value(self, cmd: str) -> bool:
+		#  command :=  get device xx state yy 
+		#  command :=  get variable xx 
+		pos = cmd.find("get ")
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_get_value var '{cmd}' pos {pos}")
+		if pos != 0: return False
+
+		cmd = cmd.split("get ")[1]
+
+		pos = cmd.find("variable ")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_get_value var '{cmd}' pos {pos}")
+		if pos == 0: 
+			cmd = cmd.split("variable ")[1]
+			var = self.check_if_match_variables(cmd)
+			if not var:  return False
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_get_value var '{var.name}' value:{var.value}")
+			indigo.variable.updateValue(self.var_name_feedback, value=var.value)
+			return True
+			
+		# check devices
+		pos = cmd.find(" state ")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_get_value dev '{cmd}' pos {pos}")
+		if pos > 5: 
+			xx = cmd.split(" state ")
+			if len(xx) < 2: return False
+			devName, state = cmd.split(" state ")
+			dev = self.check_if_match_devices(devName)
+			if not dev: return False
+			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_get_value dev '{devName}' {dev.name} ")
+			if state not in dev.states: return False
+			value = str(dev.states[state])
+			indigo.variable.updateValue(self.var_name_feedback, value=value)
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_get_value  {dev.name}  state:{value}")
+
+			return True
+
+		return False
+
 
 	def try_pattern_commands(self, cmd: str) -> bool:
 		try:
 			state = "none"
 			cmd = re.sub(r"\s+", " ", cmd.strip())
-			if self.decideMyLog("Logic"): self.indiLOG.log(20,f"try_pattern_commands {cmd} ")
+			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"try_pattern_commands {cmd} ")
 
+			###get variable or device / state value  ##
+			if self.handle_get_value(cmd): return  True
+
+			### variables  first must have "set variable name to xx "
+			if self.handle_set_variable(cmd): return  True
+
+			### devices ##
+			if self.handle_set_speed(cmd): return True
+
+			if self.handle_beep(cmd): return True
+
+			if self.handle_lock(cmd): return True
+			
+			if self.handle_unlock(cmd): return True
+			
 			if self.handle_turn_on_off(cmd): return True
 	
 			if self.handle_toggle(cmd): return  True
@@ -1251,19 +1599,24 @@ class Plugin(indigo.PluginBase):
 
 			if self.handle_set_level(cmd): return  True
 
-			indigo.variable.updateValue(self.var_name_feedback, value=self.return_bad)
+
+			if not self.return_silent:
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_bad)
+
 			return False
 		except	Exception as e:
 			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
 
-		indigo.variable.updateValue(self.var_name_feedback, value=self.return_bad)
+		if not self.return_silent:
+			indigo.variable.updateValue(self.var_name_feedback, value=self.return_bad)
 	
 	def execute_actions_for_command(self, cmd: str):
 	
 		isSynonym = self.synonymes_for_actions.get(cmd, 0)
 		actionInfo = False
+		if self.decideMyLog("logic"): self.indiLOG.log(20, f"execute_actions_for_command '{cmd}' isSynonym:{isSynonym}")
 
-		if isSynonym !=0:
+		if isSynonym != 0:
 			for action in self.actions:
 				if isSynonym == self.actions[action][0]: # == indigo id
 					actionInfo = self.actions[action]
@@ -1275,13 +1628,14 @@ class Plugin(indigo.PluginBase):
 		if not actionInfo:
 			if self.try_pattern_commands(cmd):
 				return
-			if self.decideMyLog("BadMessage"): self.indiLOG.log(20,f"No match for '{cmd}' in ACTIONs or patterns")
+			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No match for '{cmd}' in ACTIONs or patterns")
 			return
 
-		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20,f"Matched command '{cmd}' → action groups {actionInfo}")
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"Matched command '{cmd}' → action groups {actionInfo}")
 		try:
 			indigo.actionGroup.execute(actionInfo[0])
-			indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
+			if not self.return_silent:
+				indigo.variable.updateValue(self.var_name_feedback, value=self.return_ok)
 		except	Exception as e:
 			if "{}".format(e).find("None") == -1: self.indiLOG.log(40,"", exc_info=True)
 	
