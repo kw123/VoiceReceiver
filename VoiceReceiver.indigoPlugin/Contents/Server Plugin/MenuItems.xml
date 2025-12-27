@@ -227,6 +227,21 @@
 		  </Field>
 		</ConfigUI>
 	</MenuItem>
+	
+	<MenuItem id="resetFailedCommands">
+		<Name>Reset Failed Commands</Name>
+		<ConfigUI>
+			<Field id="MSG" type="textfield" defaultValue="" >
+				<Label>msg from plugin</Label>
+			</Field>
+
+		  <Field id="xblock" type="button">
+				<Label>click to </Label>
+				<Title>RESET</Title>
+				<CallbackMethod>resetFailedCommands</CallbackMethod>
+		  </Field>
+		</ConfigUI>
+	</MenuItem>
 
 </MenuItems>
 

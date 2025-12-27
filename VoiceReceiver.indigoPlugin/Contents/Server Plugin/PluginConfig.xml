@@ -113,7 +113,7 @@
 
 	<Field id="showLoginTest"      type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label> show logging test at startup:</Label>  						</Field>
 	<Field id="debugLogic"         type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (1) Logic:</Label>											</Field>
-	<Field id="debugReceivdeData"  type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (2) Received Data:</Label>				</Field>
+	<Field id="debugReceiveData"   type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (2) Received Data:</Label>				</Field>
 	<Field id="debugBadMessage"    type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (3) Bad Message:</Label>			</Field>
 	<Field id="debugUpdateIndigo"  type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (4) update indigo actions and devices:</Label>			</Field>
 	<Field id="debugActions"       type="checkbox" visibleBindingId="ShowDebug" visibleBindingValue="true" > <Label>... (5) actions:</Label>										</Field>

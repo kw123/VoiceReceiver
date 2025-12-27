@@ -1,3 +1,9 @@
+changes in V2022.2.2 2025-12-26
+==================  
+
+bug fixes
+added stats on failed commands, print to log from menu
+
 changes in V2022.2.1 2025-12-26
 ==================  
 
@@ -5,7 +11,7 @@ added several functions:
 - silence
 - set var value
 - get var value
-- get dev / stave value
+- get dev / state value
 - beep device
 - unlock device
 - lock device
