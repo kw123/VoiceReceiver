@@ -1,54 +1,6 @@
 <?xml version="1.0"?>
 <MenuItems>
 
-	<MenuItem id="printConfig">
-		<Name>Print Config and Help</Name>
-		<CallbackMethod>printConfig</CallbackMethod>
-    </MenuItem>
-
-
-
-	<MenuItem id="selectActions">
-		<Name>Define Actions to be enabled / disabled</Name>
-		<ConfigUI>
-			<Field id="lab1" type="label">
-				<Label>Define indigo actions and action ID to be enabled / removed </Label>
-			</Field>
-			
-			
-	           <Field id="actionNumber" type="menu" defaultValue="" >
-				<List class="self" method="filternumbers_1_100" dynamicReload="true" />
-				<Label>Select Action Number:</Label>
-			</Field>
-			<Field id="actionNumberConfirm" type="button">
-				<Label>confirm Action number</Label>
-				<Title>CONFIRM</Title>
-				<CallbackMethod>actionNumberConfirmCallback</CallbackMethod>
-			</Field>
-			
-           <Field id="actionadd" type="menu" defaultValue="" >
-				<List class="self" filter = "add" method="filterActions" dynamicReload="true" />
-				<Label>Select Action to be enabled to be added:</Label>
-			</Field>
-			
-			<Field id="xactionsadd" type="button">
-				<Label>After selection click</Label>
-				<Title>ADD</Title>
-				<CallbackMethod>addActionsCallback</CallbackMethod>
-			</Field>
-			
-           <Field id="actiondel" type="menu" defaultValue="def" >
-				<List class="self" filter = "remove" method="filterActions" dynamicReload="true" />
-				<Label>Select Action to be deleted:</Label>
-			</Field>
-			<Field id="xactionsdel" type="button">
-				<Label>After selection click</Label>
-				<Title>DEL</Title>
-				<CallbackMethod>delActionsCallback</CallbackMethod>
-			</Field>
-
-		</ConfigUI>
-	</MenuItem>
 
 	<MenuItem id="synomymesActions">
 		<Name>Define Action Synonymes</Name>
@@ -176,10 +128,10 @@
 				<Label>define mapping from unclear to good phrases, eg "the bug" to "debug" </Label>
 			</Field>
           <Field id="from" type="textfield" defaultValue="" >
-				<Label>define unclear word</Label>
+				<Label>define unclear phrase</Label>
 			</Field>
          <Field id="to" type="textfield" defaultValue="" >
-				<Label>define good word</Label>
+				<Label>define good phrase</Label>
 			</Field>
 			
 			<Field id="xaddbad" type="button">
@@ -210,14 +162,14 @@
 	</MenuItem>
 	
 	<MenuItem id="blockedWords">
-		<Name>Block words</Name>
+		<Name>Block phrases</Name>
 		<ConfigUI>
 			<Field id="lab1" type="label">
-				<Label>define words that must be ignored. Wehn they are present in a received command the whole command will be ignored</Label>
+				<Label>define phrases that must be ignored. Wehn they are present in a received command the whole command will be ignored</Label>
 			</Field>
 			
-          <Field id="blocked_device_words" type="textfield" defaultValue="" >
-				<Label>syntax:eg alarm|lock|enable</Label>
+          <Field id="blocked_words" type="textfield" defaultValue="" >
+				<Label>syntax: alarm|lock|enable</Label>
 		  </Field>
 			
 		  <Field id="xblock" type="button">
@@ -228,8 +180,13 @@
 		</ConfigUI>
 	</MenuItem>
 	
-	<MenuItem id="resetFailedCommands">
-		<Name>Reset Failed Commands</Name>
+	<MenuItem id="dummy1">
+		<Name>--------</Name>
+    </MenuItem>
+	
+	
+	<MenuItem id="resetStats">
+		<Name>Reset stats ..</Name>
 		<ConfigUI>
 			<Field id="MSG" type="textfield" defaultValue="" >
 				<Label>msg from plugin</Label>
@@ -238,9 +195,29 @@
 		  <Field id="xblock" type="button">
 				<Label>click to </Label>
 				<Title>RESET</Title>
-				<CallbackMethod>resetFailedCommands</CallbackMethod>
+				<CallbackMethod>resetStats</CallbackMethod>
 		  </Field>
 		</ConfigUI>
+	</MenuItem>
+
+
+	<MenuItem id="dummy2">
+		<Name>--------</Name>
+    </MenuItem>
+	
+	<MenuItem id="printHelp">
+		<Name>Print Help</Name>
+		<CallbackMethod>printHelp</CallbackMethod>
+    </MenuItem>
+	
+	<MenuItem id="printConfig">
+		<Name>Print Config</Name>
+		<CallbackMethod>printConfig</CallbackMethod>
+    </MenuItem>
+
+	<MenuItem id="printStats">
+		<Name>Print Stats</Name>
+		<CallbackMethod>printStats</CallbackMethod>
 	</MenuItem>
 
 </MenuItems>

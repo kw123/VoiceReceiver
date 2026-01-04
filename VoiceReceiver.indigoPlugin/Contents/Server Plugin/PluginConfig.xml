@@ -2,23 +2,18 @@
 <PluginConfig>
 
 	<Field id="infoLabel1" 				type="label" fontColor="orange" > 
-		<Label>Dictate plugin by Karl Wachs
-	original by 
-	this plugin receives voice commands from iphone .. via shortcuts 
-	the shortcut must send "timestamp command"
-	see example using dictate 
+		<Label>Voice Receiver plugin by Karl Wachs
 	 """  credit must go to @dtich on the indigo forum who came up with the script """
 	I just build the frame around it 
-	for help do menu / help ...
+	This plugin receives voice commands from iphone .. via shortcuts 
+	For help:  do  menu / print help config etc 
 </Label>  
 	</Field>
 
 	<Field id="simpleSeparator22" 		type="separator"/>
-
-	<Field id="MSG"        	type="textfield"   > 
-		<Label> msg from plugin:</Label>  
+	<Field id="basicconfig" 					type="label"  fontColor="green"> 
+		<Label>Basic configuration parameters:</Label>  
 	</Field>
-
 
 	<Field id="expect_time_tag"  					type="checkbox"   > 
 		<Label>expect time tag in message:</Label> 
@@ -37,20 +32,15 @@
 			<Option value="25" >2.5 secs</Option>
 			<Option value="30" >3.0 secs default</Option>
 			<Option value="35" >3.5 secs</Option>
+			<Option value="40" >4 secs</Option>
+			<Option value="50" >5 secs</Option>
+			<Option value="60" >6 secs</Option>
+			<Option value="70" >7 secs</Option>
 		</List>
 	</Field>
 	<Field id="infoLabel_delta_time" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
 		<Label>max time between send and receive message</Label>  
 	</Field>
-
-
-	<Field id="use_fragments_to_dermine_device"    type="checkbox"   > 
-		<Label>use fragments to find device:</Label>   
-	</Field>
-	<Field id="infoLabel_fragements" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
-		<Label>When the device is not fully specified the plugin can try to find the device doing a partial match</Label>  
-	</Field>
-
 
 	<Field id="var_name"    	type="textfield"   > 
 		<Label>variable name to receive messages:</Label>   
@@ -61,19 +51,18 @@
 	</Field>
 
 	<Field id="var_name_feedback"    	type="textfield"   > 
-		<Label>variable name to feedback status to iphone:</Label>   
+		<Label>variable name to send feedback status to iphone:</Label>   
 	</Field>
 	<Field id="infoLabel_var_feedback" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
-		<Label>name of the variable the ok message is picked up from iphone shortcut</Label>  
+		<Label>name of the variable the success fail  message is picked up from iphone shortcut</Label>  
 	</Field>
 
 	<Field id="folder_name"    type="textfield"   > 
-		<Label>foldername for variable:</Label>   
+		<Label>foldername for variables:</Label>   
 	</Field>
 	<Field id="infoLabel_folder" 		alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
 		<Label>foldername for the variable</Label>  
 	</Field>
-
 
 	<Field id="list_devices_max"    type="textfield"   > 
 		<Label>list max number of devices:</Label>   
@@ -82,32 +71,93 @@
 		<Label>when receiving command list devices, it will show up to this number</Label>  
 	</Field>
 
+	<Field id="sep-trans" 			type="separator"/>
 
-	<Field id="return_ok"    type="textfield"   > 
-		<Label>return text when successful:</Label>   
-	</Field>
-	<Field id="infoLabel_return_ok"  alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
-		<Label>send text back to iphone when received message can  be interpreted  successfully</Label>  
+	<Field id="translateMappings" 					type="label"  fontColor="green"> 
+		<Label>Use the following mapping if you what to use other words for commands:</Label>  
 	</Field>
 
-	<Field id="return_bad"    type="textfield"   > 
-		<Label>return text when not successful:</Label>   
-	</Field>
-	<Field id="infoLabel_return_bad" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
-		<Label>return text when not successful:</Label>   
+	<Field id="translateMappings2" 					type="label"  fontColor="darkgrey"  > 
+		<Label>	       eg "read variable" instead of "get variable"</Label>  
 	</Field>
 
-	<Field id="return_silent"    type="textfield"   > 
-		<Label>silent return   </Label>  
+ 
+	<Field id="set"     type="textfield"   >  <Label>"set":</Label>    </Field>
+	<Field id="get"     type="textfield"   >  <Label>"get":</Label>     </Field>
+	<Field id="to"      type="textfield"   >  <Label>"to":</Label>      </Field>
+	<Field id="bright"  type="textfield"   >  <Label>"bright":</Label>  </Field>
+	<Field id="level"   type="textfield"   >  <Label>"level":</Label>   </Field>
+	<Field id="toggle"  type="textfield"   >  <Label>"toggle":</Label>  </Field>
+	<Field id="turn"    type="textfield"   >  <Label>"turn":</Label>    </Field>
+	<Field id="on"      type="textfield"   >  <Label>"on":</Label>      </Field>
+	<Field id="off"     type="textfield"   >  <Label>"off":</Label>     </Field>
+	<Field id="speed"   type="textfield"   >  <Label>"speed":</Label>   </Field>
+	<Field id="beep"    type="textfield"   >  <Label>"beep":</Label>    </Field>
+	<Field id="cool"    type="textfield"   >  <Label>"cool":</Label>    </Field>
+	<Field id="heat"    type="textfield"   >  <Label>"heat":</Label>    </Field>
+	<Field id="lock"    type="textfield"   >  <Label>"lock":</Label>    </Field>
+	<Field id="unlock"  type="textfield"   >  <Label>"unlock":</Label>  </Field>
+	<Field id="silence" type="textfield"   >  <Label>"silence":</Label> </Field>
+	<Field id="wait"    type="textfield"   >  <Label>"wait":</Label>    </Field>
+	<Field id="pulse"   type="textfield"   >  <Label>"pulse":</Label> </Field>
+	<Field id="variable" type="textfield"  >  <Label>"variable":</Label> </Field>
+
+	<Field id="sep-ret" 			type="separator"/>
+
+	<Field id="infoLabel_return_silent" type="label"  fontColor="green" > 
+		<Label>Send what back to iphone to be spoken</Label>  
 	</Field>
-	<Field id="infoLabel_return_silent" 	alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
-		<Label>send a blank back to the phone</Label>  
+
+	<Field id="return_feedback"    type="menu"   defult="simple"> 
+		<Label>return feedback</Label>  
+		<List>
+			<Option value="off"  >off</Option>
+			<Option value="simple" >simple</Option>
+			<Option value="detailed" >detailed</Option>
+		</List>
 	</Field>
+
+	<Field id="infoLabel_return_ok_special" 	type="label" > 
+		<Label>                       map detailed message for ok messages</Label>  
+	</Field>  
+	<Field id="ok-set"     type="textfield"   >  <Label>"set":</Label>    </Field>
+	<Field id="ok-get"     type="textfield"   >  <Label>"get":</Label>     </Field>
+	<Field id="ok-bright"  type="textfield"   >  <Label>"bright":</Label>  </Field>
+	<Field id="ok-toggle"  type="textfield"   >  <Label>"toggle":</Label>  </Field>
+	<Field id="ok-turn"    type="textfield"   >  <Label>"turn":</Label>    </Field>
+	<Field id="ok-speed"   type="textfield"   >  <Label>"speed":</Label>   </Field>
+	<Field id="ok-beep"    type="textfield"   >  <Label>"beep":</Label>    </Field>
+	<Field id="ok-cool"    type="textfield"   >  <Label>"cool":</Label>    </Field>
+	<Field id="ok-heat"    type="textfield"   >  <Label>"heat":</Label>    </Field>
+	<Field id="ok-lock"    type="textfield"   >  <Label>"lock":</Label>    </Field>
+	<Field id="ok-unlock"  type="textfield"   >  <Label>"unlock":</Label>  </Field>
+	<Field id="ok-wait"    type="textfield"   >  <Label>"wait":</Label>    </Field>
+	<Field id="ok-pulse"   type="textfield"   >  <Label>"pulse":</Label> </Field>
+
+
+	<Field id="infoLabel_return_bad_special" 	type="label"  > 
+		<Label>                        map detailed message for failed commands</Label>  
+	</Field>  
+	<Field id="bad-set"     type="textfield"   >  <Label>"set":</Label>    </Field>
+	<Field id="bad-get"     type="textfield"   >  <Label>"get":</Label>     </Field>
+	<Field id="bad-bright"  type="textfield"   >  <Label>"bright":</Label>  </Field>
+	<Field id="bad-toggle"  type="textfield"   >  <Label>"toggle":</Label>  </Field>
+	<Field id="bad-turn"    type="textfield"   >  <Label>"turn":</Label>    </Field>
+	<Field id="bad-speed"   type="textfield"   >  <Label>"speed":</Label>   </Field>
+	<Field id="bad-beep"    type="textfield"   >  <Label>"beep":</Label>    </Field>
+	<Field id="bad-cool"    type="textfield"   >  <Label>"cool":</Label>    </Field>
+	<Field id="bad-heat"    type="textfield"   >  <Label>"heat":</Label>    </Field>
+	<Field id="bad-lock"    type="textfield"   >  <Label>"lock":</Label>    </Field>
+	<Field id="bad-unlock"  type="textfield"   >  <Label>"unlock":</Label>  </Field>
+	<Field id="bad-wait"    type="textfield"   >  <Label>"wait":</Label>    </Field>
+	<Field id="bad-pulse"   type="textfield"   >  <Label>"pulse":</Label> </Field>
+
+
 
 
 	<Field id="sep-Debug" 			type="separator"/>
 
-	<Field id="ShowDebug" 					type="checkbox"  fontColor="green"> 
+	<Field id="ShowDebug" 					type="checkbox"  > 
 		<Label>Show DEBUG section........................................................:</Label>  
 	</Field>
 

@@ -1,3 +1,20 @@
+
+changes in V22022.3.3 2026-01-04
+==================  
+
+1. added various explanations to help / config etc.
+2. added option to use "deviceid:12345:"  instead of device/variable/action names..
+3. added detailed feedback option to be spoken on iphone after execution 
+4. added abcDEF -> abc def mapping in addition to "_" -> " " to be able to match incoming dev names to existing indigo dev names
+5. added get variable dev / state contents to be spoken on iphone
+6. will replace "one" with 1 .. received from iphone used to set temp speed etc
+   the iphone sometime produces "one" "two" instead for 1 2 after listening
+7. various smaller changes and fixes
+
+this should be production ready now 
+
+
+
 changes in V2022.2.2 2025-12-26
 ==================  
 
