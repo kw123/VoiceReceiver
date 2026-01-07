@@ -1,4 +1,15 @@
 
+changes in V22022.4.3 2026-01-07
+==================  
+
+1. added command dip == inverse of pulse = turn off for x secs hen turn on.
+2. added options to use variations of commands
+3. more robust parsing of commands ie find numbers in command  
+ set brightness level device name to xx percent
+  will do a search backwards to find the xx number and remove other decorative words like percent, to level etc , reduced to 
+  device name xx
+  
+
 changes in V22022.3.3 2026-01-04
 ==================  
 

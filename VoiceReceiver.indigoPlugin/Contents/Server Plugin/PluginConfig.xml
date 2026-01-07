@@ -91,6 +91,7 @@
 	<Field id="turn"    type="textfield"   >  <Label>"turn":</Label>    </Field>
 	<Field id="on"      type="textfield"   >  <Label>"on":</Label>      </Field>
 	<Field id="off"     type="textfield"   >  <Label>"off":</Label>     </Field>
+	<Field id="of"      type="textfield"   >  <Label>"of":</Label>     </Field>
 	<Field id="speed"   type="textfield"   >  <Label>"speed":</Label>   </Field>
 	<Field id="beep"    type="textfield"   >  <Label>"beep":</Label>    </Field>
 	<Field id="cool"    type="textfield"   >  <Label>"cool":</Label>    </Field>
@@ -100,6 +101,7 @@
 	<Field id="silence" type="textfield"   >  <Label>"silence":</Label> </Field>
 	<Field id="wait"    type="textfield"   >  <Label>"wait":</Label>    </Field>
 	<Field id="pulse"   type="textfield"   >  <Label>"pulse":</Label> </Field>
+	<Field id="dip"     type="textfield"   >  <Label>"dip":</Label> </Field>
 	<Field id="variable" type="textfield"  >  <Label>"variable":</Label> </Field>
 
 	<Field id="sep-ret" 			type="separator"/>
@@ -133,25 +135,7 @@
 	<Field id="ok-unlock"  type="textfield"   >  <Label>"unlock":</Label>  </Field>
 	<Field id="ok-wait"    type="textfield"   >  <Label>"wait":</Label>    </Field>
 	<Field id="ok-pulse"   type="textfield"   >  <Label>"pulse":</Label> </Field>
-
-
-	<Field id="infoLabel_return_bad_special" 	type="label"  > 
-		<Label>                        map detailed message for failed commands</Label>  
-	</Field>  
-	<Field id="bad-set"     type="textfield"   >  <Label>"set":</Label>    </Field>
-	<Field id="bad-get"     type="textfield"   >  <Label>"get":</Label>     </Field>
-	<Field id="bad-bright"  type="textfield"   >  <Label>"bright":</Label>  </Field>
-	<Field id="bad-toggle"  type="textfield"   >  <Label>"toggle":</Label>  </Field>
-	<Field id="bad-turn"    type="textfield"   >  <Label>"turn":</Label>    </Field>
-	<Field id="bad-speed"   type="textfield"   >  <Label>"speed":</Label>   </Field>
-	<Field id="bad-beep"    type="textfield"   >  <Label>"beep":</Label>    </Field>
-	<Field id="bad-cool"    type="textfield"   >  <Label>"cool":</Label>    </Field>
-	<Field id="bad-heat"    type="textfield"   >  <Label>"heat":</Label>    </Field>
-	<Field id="bad-lock"    type="textfield"   >  <Label>"lock":</Label>    </Field>
-	<Field id="bad-unlock"  type="textfield"   >  <Label>"unlock":</Label>  </Field>
-	<Field id="bad-wait"    type="textfield"   >  <Label>"wait":</Label>    </Field>
-	<Field id="bad-pulse"   type="textfield"   >  <Label>"pulse":</Label> </Field>
-
+	<Field id="ok-dip"     type="textfield"   >  <Label>"dip":</Label> </Field>
 
 
 
