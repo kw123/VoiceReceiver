@@ -1460,20 +1460,23 @@ class Plugin(indigo.PluginBase):
 		"""
 		# opt-in via plugin config checkbox "enable straight action command"
 		if not self.pluginPrefs.get("plainactionCommand", False): return False
+		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"1. try_plainactioncommand_text: requested: {cmd_in} " )
 
 		# 100% exact-name match?
 		if cmd_in in indigo.actionGroups:
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"2. try_plainactioncommand_text: found {cmd_in} in action groups")
 			indigo.actionGroup.execute(cmd_in)
-			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_ action command: {cmd_in}")
 			self.stats_good(True, self.feedback_ok["action"])
 			return True
 
 		# if not, retry ignoring case, spaces and "/" characters
 		cmdIn = cmd_in.replace(" ", "").replace("/", "")
 		for cmd in indigo.actionGroups:
-			if cmd.lower().replace(" ", "").replace("/", "") == cmdIn:
+			#if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"3. try_plainactioncommand_text: searching {cmd.name} in action groups")
+		
+			if cmd.name.lower().replace(" ", "").replace("/", "") == cmdIn:
+				if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"4. try_plainactioncommand_text found in action groups: {cmd_in} -> {cmd.name}")
 				indigo.actionGroup.execute(cmd)
-				if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_ action command: {cmd_in}")
 				self.stats_good(True, self.feedback_ok["action"])
 				return True
 		return False

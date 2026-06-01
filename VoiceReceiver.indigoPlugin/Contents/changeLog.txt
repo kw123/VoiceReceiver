@@ -1,4 +1,4 @@
-changes in V22022.4.4 2026-06-01
+changes in V22022.4.5 2026-06-01
 ==================  
 
 1. added "straight (plain) action command": when enabled in config ("enable straight action command"),
