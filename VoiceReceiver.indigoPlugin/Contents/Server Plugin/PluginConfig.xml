@@ -71,6 +71,13 @@
 		<Label>when receiving command list devices, it will show up to this number</Label>  
 	</Field>
 
+	<Field id="plainactionCommand"    type="checkbox"   > 
+		<Label>enable straight action command:</Label>   
+	</Field>
+	<Field id="plainactionCommandLabel" 	 alignWithControl="true" 	type="label" fontSize="small" fontColor="darkgrey" > 
+		<Label>use plain (lower case) input to check if the exact action command exists, if yes execute</Label>  
+	</Field>
+
 	<Field id="sep-trans" 			type="separator"/>
 
 	<Field id="translateMappings" 					type="label"  fontColor="green"> 

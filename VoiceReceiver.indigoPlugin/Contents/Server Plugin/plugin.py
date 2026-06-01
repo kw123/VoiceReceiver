@@ -75,6 +75,7 @@ kDefaultPluginPrefs = {
 	"pulse":								"pulse",
 	"dip":									"dip",
 	"variable":								"variable",
+	"plainactionCommand":					True,
 
 	"ok-set":								"set",
 	"ok-get":								"",
@@ -91,6 +92,7 @@ kDefaultPluginPrefs = {
 	"ok-wait":								"waited",
 	"ok-pulse":								"pulsed",
 	"ok-dip":								"dipped",
+	"ok-action":							"action",
 
 	"use_fragments_to_dermine_device":			False,
 	"list_devices_max":							300,
@@ -117,6 +119,16 @@ for kk in kDefaultPluginPrefs:
 class Plugin(indigo.PluginBase):
 	####-----------------			  ---------
 	def __init__(self, pluginId, pluginDisplayName, pluginVersion, pluginPrefs):
+		"""Constructor for the plugin; calls the Indigo PluginBase initializer and sets up core attributes such as plugin paths, IDs, PID, macOS user info, logging handlers/formatters with per-level formats, and the Python interpreter path. Logs environment and version details on startup.
+
+		Inputs:
+		    pluginId (str): Indigo plugin identifier
+		    pluginDisplayName (str): human-readable plugin name
+		    pluginVersion (str): plugin version string
+		    pluginPrefs (indigo.Dict): persisted plugin preferences
+		Outputs:
+		    None: initializes instance attributes and logging
+		"""
 		indigo.PluginBase.__init__(self, pluginId, pluginDisplayName, pluginVersion, pluginPrefs)
 
 
@@ -207,6 +219,13 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------			  ---------
 	def __del__(self):
+		"""Destructor that delegates to the Indigo PluginBase __del__ for cleanup.
+
+		Inputs:
+		    None.
+		Outputs:
+		    None: delegates teardown to PluginBase
+		"""
 		indigo.PluginBase.__del__(self)
 
 	###########################		INIT	## START ########################
@@ -214,6 +233,13 @@ class Plugin(indigo.PluginBase):
 	####----------------- @ startup set global parameters, create directories etc ---------
 	def startup(self):
 
+		"""Indigo startup hook that resets quit state, verifies the plugin name (exiting if invalid), records the start time, flags variables for re-initialization, and applies debug settings from preferences.
+
+		Inputs:
+		    None.
+		Outputs:
+		    None: sets startup state and applies debug prefs
+		"""
 		self.quitNOW = ""
 
 		if not checkIndigoPluginName(self, indigo):
@@ -228,6 +254,13 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------	 ---------
 	def initVariables(self):
+		"""Initializes the plugin's working variables from preferences and JSON files: ensures the preferences directory exists, builds action-word translation and feedback maps, loads synonym/mapping/blocked-word/command-history dictionaries, reads various tuning preferences, and creates the configured Indigo variable folder and variables.
+
+		Inputs:
+		    None.
+		Outputs:
+		    None: populates instance config attributes and creates Indigo variables/folders; logs errors
+		"""
 		try:
 			self.redoInitVariables = False
 
@@ -245,7 +278,7 @@ class Plugin(indigo.PluginBase):
 				self.translate[xx] = self.pluginPrefs.get(xx, kDefaultPluginPrefs[xx])
 
 			self.feedback_ok = {}
-			for xx in ["set", "get", "bright", "toggle", "pulse", "dip", "turn", "speed", "beep", "cool", "heat", "lock", "unlock", "silence", "wait"]:
+			for xx in ["set", "get", "bright", "toggle", "pulse", "dip", "turn", "speed", "beep", "cool", "heat", "lock", "unlock", "silence", "wait", "action"]:
 				self.feedback_ok[xx] = self.pluginPrefs.get("ok-"+xx, kDefaultPluginPrefs["ok-"+xx])
 
 
@@ -313,6 +346,13 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------  ---------
 	def getMenuActionConfigUiValues(self, menuId: str) -> dict:
+		"""Returns the config UI values for a menu action; for the 'blockedWords' menu it injects the current blocked words joined by '|' into the dialog values.
+
+		Inputs:
+		    menuId (str): identifier of the menu being opened
+		Outputs:
+		    dict: config UI values for the menu dialog
+		"""
 		xx =  super(Plugin, self).getMenuActionConfigUiValues(menuId)
 		if menuId == "blockedWords":
 			yy = "|".join(self.blocked_words)
@@ -324,6 +364,14 @@ class Plugin(indigo.PluginBase):
 	####-----------------  ---------
 	def blockWordsCallback(self, valuesDict=None , typeId=""):
 		#self.indiLOG.log(20, f"blockWordsCallback {valuesDict}")
+		"""Callback that parses the '|'-delimited blocked-words string from the dialog into a cleaned list and persists it to blocked_words.json.
+
+		Inputs:
+		    valuesDict (indigo.Dict or None): dialog values containing blocked_words
+		    typeId (str): config UI type identifier
+		Outputs:
+		    None: updates self.blocked_words and writes JSON file
+		"""
 		yy = valuesDict["blocked_words"].split("|")
 		self.blocked_words= []
 		for xx in yy:
@@ -333,7 +381,17 @@ class Plugin(indigo.PluginBase):
 
 
 
+	####-------------------------------------------------------------------------####
 	def filterFromTo(self, filter="", valuesDict=None , typeId=None):
+		"""List filter callback that builds menu entries from the from-to mapping, returning each key alongside a 'key->value' display label.
+
+		Inputs:
+		    filter (str): filter string from the UI
+		    valuesDict (indigo.Dict or None): current dialog values
+		    typeId (str or None): config UI type identifier
+		Outputs:
+		    list: list of [key, label] pairs for the from-to map
+		"""
 		xList = []
 	
 		for syn in self.map_from_to:
@@ -345,6 +403,14 @@ class Plugin(indigo.PluginBase):
 	####-----------------  ---------
 	def addFromCallback(self, valuesDict=None , typeId=""):
 		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		"""Callback that adds a new from->to mapping entry from the dialog's 'from' and 'to' fields (if not already present) and persists the map to map_from_to.json.
+
+		Inputs:
+		    valuesDict (indigo.Dict or None): dialog values with 'from' and 'to'
+		    typeId (str): config UI type identifier
+		Outputs:
+		    None: updates self.map_from_to and writes JSON file
+		"""
 		bad = valuesDict["from"]
 		good = valuesDict["to"]
 		if bad not in self.map_from_to:
@@ -354,6 +420,14 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------  ---------
 	def removeFromCallback(self, valuesDict=None , typeId=""):
+		"""Callback that removes the from->to mapping entry named by the dialog's 'fromRemove' field and persists the updated map to map_from_to.json.
+
+		Inputs:
+		    valuesDict (indigo.Dict or None): dialog values with 'fromRemove'
+		    typeId (str): config UI type identifier
+		Outputs:
+		    None: removes entry from self.map_from_to and writes JSON file; logs
+		"""
 		bad = valuesDict["fromRemove"]
 		if bad in self.map_from_to:
 			del self.map_from_to[bad]
@@ -366,6 +440,15 @@ class Plugin(indigo.PluginBase):
 	####-----------------  ---------
 	def filterActions(self, filter="", valuesDict=None , typeId=None):
 		# also used to enable and disable actions 
+		"""List filter callback that, when the filter is 'synonymes', returns the plugin's Indigo action groups as [id, name] pairs for selection.
+
+		Inputs:
+		    filter (str): filter string; 'synonymes' enables listing
+		    valuesDict (indigo.Dict or None): current dialog values
+		    typeId (str or None): config UI type identifier
+		Outputs:
+		    list: list of [actionGroupId, name] pairs
+		"""
 		xList = []
 		if filter  == "synonymes":
 			for action in indigo.actionGroups.iter(self.pluginId):
@@ -377,6 +460,15 @@ class Plugin(indigo.PluginBase):
 
 ####-------------------------------------------------------------------------####
 	def filterSynonymesActions(self, filter="", valuesDict=None , typeId=None):
+		"""List filter callback that returns the currently defined action synonyms as [synonym, synonym] pairs for the UI.
+
+		Inputs:
+		    filter (str): filter string from the UI
+		    valuesDict (indigo.Dict or None): current dialog values
+		    typeId (str or None): config UI type identifier
+		Outputs:
+		    list: list of [synonym, synonym] pairs
+		"""
 		xList = []
 	
 		for syn in self.synonymes_for_actions:
@@ -385,8 +477,17 @@ class Plugin(indigo.PluginBase):
 		return xList
 
 
+	####-------------------------------------------------------------------------####
 	def addSynonymActionCallback(self, valuesDict=None , typeId=""):
 		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		"""Callback that maps a new action synonym (from the dialog's 'add' field) to the selected action id (if not already present) and persists the synonyms to synonymes_for_actions.json.
+
+		Inputs:
+		    valuesDict (indigo.Dict or None): dialog values with 'id' and 'add'
+		    typeId (str): config UI type identifier
+		Outputs:
+		    None: updates self.synonymes_for_actions and writes JSON file
+		"""
 		id = valuesDict["id"]
 		synonym = valuesDict["add"]
 		if synonym not in self.synonymes_for_actions:
@@ -397,6 +498,14 @@ class Plugin(indigo.PluginBase):
 	####-----------------  ---------
 	def removeSynonymActionCallback(self, valuesDict=None , typeId=""):
 		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		"""Removes the action synonym named in valuesDict['remove'] from the synonymes_for_actions dictionary and persists the updated mapping to its JSON file.
+
+		Inputs:
+		    valuesDict (dict or None): config UI values containing the 'remove' key with the synonym to delete
+		    typeId (str): Indigo config UI type identifier
+		Outputs:
+		    None: deletes synonym entry and writes synonymes_for_actions.json
+		"""
 		synonym = valuesDict["remove"]
 		if synonym in self.synonymes_for_actions:
 			del self.synonymes_for_actions[synonym]
@@ -408,6 +517,15 @@ class Plugin(indigo.PluginBase):
 	####-----------------  ---------
 	def filterDevices(self, filter="", valuesDict=None , typeId=None):
 		# also used to enable and disable actions 
+		"""Builds a selection list of all Indigo devices as [id, name] pairs for use in a config UI menu list.
+
+		Inputs:
+		    filter (str): Indigo list filter string (unused)
+		    valuesDict (dict or None): current config UI values (unused)
+		    typeId (str or None): Indigo config UI type identifier (unused)
+		Outputs:
+		    list: list of [device id, device name] pairs for all Indigo devices
+		"""
 		xList = []
 	
 		for dev in indigo.devices.iter():
@@ -418,7 +536,17 @@ class Plugin(indigo.PluginBase):
 		return xList
 
 
+	####-------------------------------------------------------------------------####
 	def filterSynonymesDevices(self, filter="", valuesDict=None , typeId=None):
+		"""Builds a selection list of the currently defined device synonym phrases as [synonym, synonym] pairs for a config UI menu list.
+
+		Inputs:
+		    filter (str): Indigo list filter string (unused)
+		    valuesDict (dict or None): current config UI values (unused)
+		    typeId (str or None): Indigo config UI type identifier (unused)
+		Outputs:
+		    list: list of [synonym, synonym] pairs from synonymes_for_devices
+		"""
 		xList = []
 		for syn in self.synonymes_for_devices:
 			xList.append([syn, syn])
@@ -426,8 +554,17 @@ class Plugin(indigo.PluginBase):
 		return xList
 
 
+	####-------------------------------------------------------------------------####
 	def addSynonymDeviceCallback(self, valuesDict=None , typeId=""):
 		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		"""Adds a new device synonym (valuesDict['add']) mapped to a device id (valuesDict['id']) into synonymes_for_devices if not already present, then persists the mapping to its JSON file.
+
+		Inputs:
+		    valuesDict (dict or None): config UI values containing 'id' (device id) and 'add' (synonym phrase)
+		    typeId (str): Indigo config UI type identifier
+		Outputs:
+		    None: adds synonym entry and writes synonymes_for_devices.json
+		"""
 		id = valuesDict["id"]
 		synonym = valuesDict["add"]
 		if synonym not in self.synonymes_for_devices:
@@ -438,6 +575,14 @@ class Plugin(indigo.PluginBase):
 	####-----------------  ---------
 	def removeSynonymDeviceCallback(self, valuesDict=None , typeId=""):
 		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		"""Removes the device synonym named in valuesDict['remove'] from synonymes_for_devices and persists the updated mapping to its JSON file.
+
+		Inputs:
+		    valuesDict (dict or None): config UI values containing the 'remove' key with the synonym to delete
+		    typeId (str): Indigo config UI type identifier
+		Outputs:
+		    None: deletes synonym entry and writes synonymes_for_devices.json
+		"""
 		synonym = valuesDict["remove"]
 		if synonym in self.synonymes_for_devices:
 			del self.synonymes_for_devices[synonym]
@@ -449,6 +594,15 @@ class Plugin(indigo.PluginBase):
 	####-----------------  ---------
 	def filterVariables(self, filter="", valuesDict=None , typeId=None):
 		# also used to enable and disable actions 
+		"""Builds a selection list of all Indigo variables as [id, name] pairs for use in a config UI menu list.
+
+		Inputs:
+		    filter (str): Indigo list filter string (unused)
+		    valuesDict (dict or None): current config UI values (unused)
+		    typeId (str or None): Indigo config UI type identifier (unused)
+		Outputs:
+		    list: list of [variable id, variable name] pairs for all Indigo variables
+		"""
 		xList = []
 	
 		for var in indigo.variables.iter():
@@ -459,7 +613,17 @@ class Plugin(indigo.PluginBase):
 		return xList
 
 
+	####-------------------------------------------------------------------------####
 	def filterSynonymesVariables(self, filter="", valuesDict=None , typeId=None):
+		"""Builds a selection list of the currently defined variable synonym phrases as [synonym, synonym] pairs for a config UI menu list.
+
+		Inputs:
+		    filter (str): Indigo list filter string (unused)
+		    valuesDict (dict or None): current config UI values (unused)
+		    typeId (str or None): Indigo config UI type identifier (unused)
+		Outputs:
+		    list: list of [synonym, synonym] pairs from synonymes_for_variables
+		"""
 		xList = []
 	
 		for syn in self.synonymes_for_variables:
@@ -468,8 +632,17 @@ class Plugin(indigo.PluginBase):
 		return xList
 
 
+	####-------------------------------------------------------------------------####
 	def addSynonymVariableCallback(self, valuesDict=None , typeId=""):
 		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		"""Adds a new variable synonym (valuesDict['add']) mapped to a variable id (valuesDict['id']) into synonymes_for_variables if not already present, then persists the mapping to its JSON file.
+
+		Inputs:
+		    valuesDict (dict or None): config UI values containing 'id' (variable id) and 'add' (synonym phrase)
+		    typeId (str): Indigo config UI type identifier
+		Outputs:
+		    None: adds synonym entry and writes synonymes_for_variables.json
+		"""
 		id = valuesDict["id"]
 		synonym = valuesDict["add"]
 		if synonym not in self.synonymes_for_variables:
@@ -480,6 +653,14 @@ class Plugin(indigo.PluginBase):
 	####-----------------  ---------
 	def removeSynonymVariableCallback(self, valuesDict=None , typeId=""):
 		#self.indiLOG.log(20, f"selectActionsCallback {valuesDict}")
+		"""Removes the variable synonym named in valuesDict['remove'] from synonymes_for_variables and persists the updated mapping to its JSON file.
+
+		Inputs:
+		    valuesDict (dict or None): config UI values containing the 'remove' key with the synonym to delete
+		    typeId (str): Indigo config UI type identifier
+		Outputs:
+		    None: deletes synonym entry and writes synonymes_for_variables.json
+		"""
 		synonym = valuesDict["remove"]
 		if synonym in self.synonymes_for_variables:
 			del self.synonymes_for_variables[synonym]
@@ -488,6 +669,15 @@ class Plugin(indigo.PluginBase):
 
 ####-------------------------------------------------------------------------####
 	def filternumbers_1_100(self, filter="", valuesDict=None , typeId=None):
+		"""Builds a selection list of the numbers 1 through 99 as [n, n] pairs for use in a config UI menu list.
+
+		Inputs:
+		    filter (str): Indigo list filter string (unused)
+		    valuesDict (dict or None): current config UI values (unused)
+		    typeId (str or None): Indigo config UI type identifier (unused)
+		Outputs:
+		    list: list of [int, int] pairs for numbers 1 to 99
+		"""
 		xList = []
 	
 		for ii in range(1,100):
@@ -497,6 +687,14 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------	 ---------
 	def printHelp(self,  valuesDict=None , typeId=""):
+		"""Assembles a large multi-line help text describing what the plugin does, installation steps, the iPhone shortcut setup, and the supported voice commands, then logs it to the Indigo log at level 20.
+
+		Inputs:
+		    valuesDict (dict or None): config UI values (unused)
+		    typeId (str): Indigo config UI type identifier (unused)
+		Outputs:
+		    None: writes the full help text to the Indigo log
+		"""
 		try:
 			out =  '\n'
 			out += '\n'
@@ -615,7 +813,7 @@ class Plugin(indigo.PluginBase):
 			out += '====  commands ====================================================\n'
 			out += '   substitute <device>   with device name     or synonym or  "device id:<devId>:"     or "deviceid:<devId>:" \n'
 			out += '   substitute <variable> with variable name   or synonym or  "variable id:<varId>:"   or "variableid:<varId>" \n'
-			out += '   substitute <action>   with action synonym  or             "action id:<actionId>:"  or "actionid:<actionId>"\n'
+			out += '   substitute <action>   with action synonym  or             "action id:<actionId>:"  or "actionid:<actionId>"  or the exact action group name (lower case)\n'
 			out += '   substitute <state>    with state name  \n'
 			out += '   substitute <value>    with value to be used \n'
 			out += '   upper and lower cases are ignored\n'
@@ -644,6 +842,9 @@ class Plugin(indigo.PluginBase):
 			out += '   (set) heat (temperature) <device> to <degrees> (temperature, degrees) for thermostates to set heat target temp \n'
 			out += '   (set) cool (temperature) <device> to <degrees> (temperature, degrees) for thermostatesto seth ac target temp\n'
 			out += '   (set) bright(ness level) <device> (to) <value> (percent / %)          will set brightess of dimmer device to <value> 0..100  \n'
+			out += '   <action synonym>                                                      will run the Indigo Action Group mapped to that synonym (see Define Action Synonymes)\n'
+			out += '   <indigo action group name>                                            plain (straight) action command: speak the name of an Indigo Action Group to run it directly, no synonym needed\n'
+			out += '                                                                         must be enabled in config ("enable straight action command"); matches exact name first, then ignoring case/spaces/"/"\n'
 			out += '   " and "  or  "&""  or  " then "                                       can be used to concatenate several commands"\n'
 			out += '\n'
 			out += '=== meta commands ==================================================\n'
@@ -662,6 +863,7 @@ class Plugin(indigo.PluginBase):
 			out += '   pulse deviceid:12345: 5 sec                                       will turn on indigo device with id 12345 for 5 secs then off\n'
 			out += '   dip office lights                                                 will turn off indigo device  "office lights" for 1 secs then on - 1 is the default\n'
 			out += '   open garage                                                       will be execute that action if you have defined "open garage" as a synonym for an action\n'
+			out += '   good night                                                        plain action command: runs the Indigo Action Group named exactly "good night", no synonym needed\n'
 			out += '   actionid:54321                                                    will execute indigo action with id 54321 if it exists\n'
 			out += '   bright <device1> to xx and wait 5 and turn on <device2>           will execute 3 commands  \n'
 			out += '   turn on ;SKD;ASJ  on                                              will fail and the iphone will speak "not executed" or "device not found" depending on settings \n'
@@ -676,6 +878,14 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------	 ---------
 	def printConfig(self,  valuesDict=None , typeId=""):
+		"""Assembles a multi-line report of the current plugin configuration (timing, variable/folder names, feedback settings, word mappings, defined action/device/variable synonyms, blocked words, and bad-to-good word mappings) and logs it to the Indigo log at level 20.
+
+		Inputs:
+		    valuesDict (dict or None): config UI values (unused)
+		    typeId (str): Indigo config UI type identifier (unused)
+		Outputs:
+		    None: writes the current configuration summary to the Indigo log
+		"""
 		try:
 			out = '\n'
 			out += '\n'
@@ -744,7 +954,16 @@ class Plugin(indigo.PluginBase):
 		return
 
 
+	####-------------------------------------------------------------------------####
 	def printStats(self, valuesDict=None, id=None):
+		"""Builds a formatted multi-line report of failed and OK voice command statistics (each command with its occurrence count and timestamps) and writes it to the Indigo log at info level.
+
+		Inputs:
+		    valuesDict (dict or None): unused config/values dictionary from the UI
+		    id (object or None): unused dialog/element identifier
+		Outputs:
+		    None: logs the formatted stats report
+		"""
 		try:
 			out = '\n'
 			out += '\n'
@@ -786,6 +1005,14 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------	 ---------
 	def resetStats(self, valuesDict=None, id=None):
+		"""Clears the in-memory failed and OK command statistics, persists the now-empty dictionaries to their JSON files, and reports a confirmation message back in valuesDict.
+
+		Inputs:
+		    valuesDict (dict): UI values dict that receives the 'MSG' confirmation
+		    id (object or None): unused dialog/element identifier
+		Outputs:
+		    dict: the valuesDict with MSG set to 'stats resetted'
+		"""
 		self.failed_commands = dict()
 		self.ok_commands = dict()
 		self.writeJson(self.failed_commands, fName=self.indigoPreferencesPluginDir + "failed_commands.json", verbose=False)
@@ -796,6 +1023,14 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------	 ---------
 	def setDebugFromPrefs(self, theDict: dict, writeToLog=True):
+		"""Rebuilds the list of active debug areas from boolean 'debug<area>' flags in the given preferences dict, optionally logging the resulting enabled areas.
+
+		Inputs:
+		    theDict (dict): preferences dictionary holding debug area flags
+		    writeToLog (bool): whether to log the resulting debug areas
+		Outputs:
+		    None: updates self.debugAreas and optionally logs
+		"""
 		self.debugAreas = []
 		try:
 			for d in _debugAreas:
@@ -807,6 +1042,13 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------	 ---------
 	def completePath(self, inPath:str):
+		"""Normalizes a directory path string by returning empty string for blank input and otherwise ensuring it ends with a trailing slash.
+
+		Inputs:
+		    inPath (str): path string to normalize
+		Outputs:
+		    str: the path with a trailing slash, or empty string
+		"""
 		if len(inPath) == 0: return ""
 		if inPath == " ":	 return ""
 		if inPath[-1] !="/": inPath +="/"
@@ -815,6 +1057,14 @@ class Plugin(indigo.PluginBase):
 
 	####-------------------------------------------------------------------------####
 	def readJson(self, fName:str, defReturn={}):
+		"""Reads and parses a JSON file from disk, returning the decoded object; if the file does not exist or an error occurs it returns the provided default.
+
+		Inputs:
+		    fName (str): path of the JSON file to read
+		    defReturn (dict): default value returned when file missing or on error
+		Outputs:
+		    dict: the parsed JSON data or the default value
+		"""
 		try:
 			if os.path.isfile(fName):
 				f = self.openEncoding(fName,"r")
@@ -833,6 +1083,18 @@ class Plugin(indigo.PluginBase):
 
 	####-------------------------------------------------------------------------####
 	def writeJson(self, data: dict, fName="", sort=True , doFormat=True, singleLines=False, verbose= False):
+		"""Serializes data to JSON (or a simple key:value line format), optionally writing it to the given file, and returns the serialized string.
+
+		Inputs:
+		    data (dict): data to serialize
+		    fName (str): file path to write to, or empty to skip writing
+		    sort (bool): whether to sort keys in the JSON output
+		    doFormat (bool): whether to pretty-format the output
+		    singleLines (bool): use one line per key instead of JSON when formatting
+		    verbose (bool): whether to log the serialized output
+		Outputs:
+		    str: the serialized output, or empty string for empty/None data or on error
+		"""
 		try:
 			out = ""
 			if doFormat:
@@ -868,6 +1130,13 @@ class Plugin(indigo.PluginBase):
 
 	####-------------------------------------------------------------------------####
 	def readPopen(self, cmd: str):
+		"""Runs a shell command via subprocess and returns its stdout and stderr decoded as UTF-8 strings.
+
+		Inputs:
+		    cmd (str): shell command to execute
+		Outputs:
+		    tuple: (stdout, stderr) decoded strings, or None on error
+		"""
 		try:
 			ret, err = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
 			return ret.decode('utf-8'), err.decode('utf-8')
@@ -879,6 +1148,14 @@ class Plugin(indigo.PluginBase):
 	####-------------------------------------------------------------------------####
 	def openEncoding(self, fName: str , readOrWrite: str):
 
+		"""Opens a file handle in the requested mode, using UTF-8 encoding for text modes (codecs.open on Python 2) and plain binary open when the mode contains 'b'.
+
+		Inputs:
+		    fName (str): path of the file to open
+		    readOrWrite (str): file open mode such as 'r', 'w', or 'rb'
+		Outputs:
+		    object: the open file handle, or None on error
+		"""
 		try:
 			if readOrWrite.find("b") > -1:
 				return open( fName, readOrWrite)
@@ -900,6 +1177,13 @@ class Plugin(indigo.PluginBase):
 	####-----------------  set the geneeral config parameters---------
 	def validatePrefsConfigUi(self, valuesDict: dict):
 
+		"""Validates and applies the plugin preferences when the prefs dialog is closed, copying timing and variable-name settings into instance attributes and flagging variables to be re-initialized.
+
+		Inputs:
+		    valuesDict (dict): preferences values from the config dialog
+		Outputs:
+		    tuple: (True, valuesDict) on success or (False, errorDict, valuesDict) on error
+		"""
 		errorDict = indigo.Dict()
 		try:
 			valuesDict["MSG"]					= "ok"
@@ -926,6 +1210,13 @@ class Plugin(indigo.PluginBase):
 	####-----------------init  main loop ---------
 	def fixBeforeRunConcurrentThread(self) -> bool:
 
+		"""Performs one-time initialization before the main loop: records current minute/hour, writes the data version file, initializes variables, and subscribes to Indigo variable changes.
+
+		Inputs:
+		    None.
+		Outputs:
+		    bool: True after initialization completes
+		"""
 		nowDT = datetime.datetime.now()
 		self.lastMinute		= nowDT.minute
 		self.lastHour		= nowDT.hour
@@ -938,6 +1229,13 @@ class Plugin(indigo.PluginBase):
 	####-----------------   main loop          ---------
 	def runConcurrentThread(self):
 
+		"""The plugin's main background thread: runs startup init then loops once per second re-initializing variables when flagged, exits when quitNOW is set, saves prefs, and restarts the plugin if a quit reason was given.
+
+		Inputs:
+		    None.
+		Outputs:
+		    None: runs the main loop, logs, saves prefs, and may restart the plugin
+		"""
 		if not self.fixBeforeRunConcurrentThread():
 			self.indiLOG.log(40,"..error in startup")
 			self.sleep(100)
@@ -973,7 +1271,16 @@ class Plugin(indigo.PluginBase):
 	###########################	receive text and act   ############################
 	###########################	                       ############################
 
+	####-------------------------------------------------------------------------####
 	def variableUpdated(self, orig_var: dict, new_var: dict ):
+		"""Callback fired when a subscribed Indigo variable changes; for the monitored command variable it resets feedback, dispatches the new value to the action handler, and updates the feedback variable with the result or a 'not finished' marker.
+
+		Inputs:
+		    orig_var (indigo.Variable): the variable's prior state
+		    new_var (indigo.Variable): the variable's updated state with new value
+		Outputs:
+		    None: updates the feedback variable and triggers the command action
+		"""
 		if self.var_name != orig_var.name: return 
 		self.feedback_value = " "
 		indigo.variable.updateValue(self.var_name_feedback, value=" ")
@@ -986,13 +1293,21 @@ class Plugin(indigo.PluginBase):
 		return  
 
 
+	####-------------------------------------------------------------------------####
 	def variableUpdated_action(self, new_var:str ):
+		"""Indigo variable-change callback that treats the new variable value as an incoming voice command: it strips time tags, normalizes the text, handles built-in commands (list devices, test, debug on/off, help, silence), then splits compound commands and dispatches each sub-command to handle_wait/execute_actions_for_command, updating the feedback variable.
+
+		Inputs:
+		    new_var (str): raw command text from the watched Indigo variable
+		Outputs:
+		    None: processes the command, logs, runs actions and updates the feedback variable/stats
+		"""
 		try:
 			if self.decideMyLog("ReceivdeData"): self.indiLOG.log(20, f'var changed  "{new_var}"')
 				
 			self.raw = new_var
 	
-			#if self.decideMyLog("ReceivdeData"): self.indiLOG.log(20, f"Command received raw: '{self.raw}'")
+			if self.decideMyLog("ReceivdeData"): self.indiLOG.log(20, f"Command received raw: '{self.raw}'")
 	
 			if not self.raw or not self.raw.strip():
 				return
@@ -1079,9 +1394,17 @@ class Plugin(indigo.PluginBase):
 		return 
 
 
+	####-------------------------------------------------------------------------####
 	def execute_actions_for_command(self, cmd_in: str):
 	
 		# 1.1 check if this is something with explicit  xxxid:
+		"""Resolves and executes the action for a normalized command: handles explicit 'device id:'/'variable id:' patterns, 'action id:' direct action-group execution, synonym-mapped action groups, and otherwise falls back to try_pattern_commands for device/variable commands.
+
+		Inputs:
+		    cmd_in (str): normalized command string to match and execute
+		Outputs:
+		    bool: True if a matching action/pattern was executed, False if no match
+		"""
 		if  cmd_in.find("device id:") > -1 or cmd_in.find("variable id:") > -1:
 			if self.try_pattern_commands(cmd_in): return True
 			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No match for '{cmd_in}' in ACTIONs or patterns")
@@ -1113,16 +1436,58 @@ class Plugin(indigo.PluginBase):
 			indigo.actionGroup.execute(synonymId)
 			self.stats_good(True, "action executed")
 			return True
-	
+			
 				
 		# second check if this is an dev var .. command:
 		if self.try_pattern_commands(cmd_in): return True
+
+		# try if this is a plain (straight) action command: exact action-group name, when enabled 
+		if self.try_plainactioncommand_text(cmd_in): return True
+			
 
 		if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"No match for '{cmd_in}' in ACTIONs or patterns")
 		return False
 
 
+	####-------------------------------------------------------------------------####
+	def try_plainactioncommand_text(self, cmd_in: str) -> bool:
+		"""Plain ("straight") action command: when enabled via the 'plainactionCommand' plugin preference, run an Indigo Action Group whose name matches the spoken command - first an exact (100%) name match, then a normalized match that ignores case, spaces and "/". No action synonym needs to be defined.
+
+		Inputs:
+		    cmd_in (str): normalized command string, expected to be (close to) the literal name of an Indigo Action Group
+		Outputs:
+		    bool: True if the feature is enabled and a matching action group was found and executed; False otherwise (including when the feature is disabled)
+		"""
+		# opt-in via plugin config checkbox "enable straight action command"
+		if not self.pluginPrefs.get("plainactionCommand", False): return False
+
+		# 100% exact-name match?
+		if cmd_in in indigo.actionGroups:
+			indigo.actionGroup.execute(cmd_in)
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_ action command: {cmd_in}")
+			self.stats_good(True, self.feedback_ok["action"])
+			return True
+
+		# if not, retry ignoring case, spaces and "/" characters
+		cmdIn = cmd_in.replace(" ", "").replace("/", "")
+		for cmd in indigo.actionGroups:
+			if cmd.lower().replace(" ", "").replace("/", "") == cmdIn:
+				indigo.actionGroup.execute(cmd)
+				if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_ action command: {cmd_in}")
+				self.stats_good(True, self.feedback_ok["action"])
+				return True
+		return False
+
+
+	####-------------------------------------------------------------------------####
 	def try_pattern_commands(self, cmd_in: str) -> bool:
+		"""Parses device-id/variable-id patterns from the command (filling self.device or self.variable with [prefix, indigo object, value]) and then tries each device/variable command handler in turn (get value, set variable, speed, beep, pulse, dip, unlock, lock, turn on/off, toggle, set heat/cool, set level).
+
+		Inputs:
+		    cmd_in (str): command string possibly containing device/variable id patterns
+		Outputs:
+		    bool: True if one of the handlers matched/handled the command, False otherwise
+		"""
 		try:
 			# replace white spaces with one blank and strip blanks
 			cmd = re.sub(r"\s+", " ", cmd_in.strip()).strip()
@@ -1258,12 +1623,28 @@ class Plugin(indigo.PluginBase):
 	#  META COMMANDS
 	# ==========================
 	
+	####-------------------------------------------------------------------------####
 	def log_available_commands(self):
+		"""Logs all available ACTION voice commands by printing each synonym key (sorted) that maps voice phrases to Indigo action groups.
+
+		Inputs:
+		    None.
+		Outputs:
+		    None: writes the list of action synonyms to the log
+		"""
 		self.indiLOG.log(20,"Available ACTION commands: that are mapped from voice to actual indigo action groups")
 		for cmd in sorted( self.synonymes_for_actions.keys()):
 			self.indiLOG.log(20, f"  {cmd}")
 	
+	####-------------------------------------------------------------------------####
 	def log_devices(self):
+		"""Logs the list of Indigo devices showing each device name alongside its normalized match form, truncating once self.list_devices_max devices have been printed.
+
+		Inputs:
+		    None.
+		Outputs:
+		    None: writes the device name to normalized mapping to the log
+		"""
 		self.indiLOG.log(20,"Device list (name → normalized) [truncated if large]:")
 		count = 0
 		for dev in indigo.devices:
@@ -1279,7 +1660,15 @@ class Plugin(indigo.PluginBase):
 
 
 	# handle updates
+	####-------------------------------------------------------------------------####
 	def handle_wait(self, cmd_in: str) -> bool:
+		"""If the command contains the 'wait' keyword, parses a numeric duration after it and sleeps for that many seconds before returning, used to insert delays between compound sub-commands.
+
+		Inputs:
+		    cmd_in (str): command string possibly containing a wait/delay instruction
+		Outputs:
+		    bool: True if the command was a wait command (handled), False if it was not a wait command
+		"""
 		if cmd_in.find(self.translate["wait"]) > -1:
 			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_wait received command: '{cmd_in}'")
 			test = cmd_in.lower().split(self.translate["wait"])[1].strip()
@@ -1295,9 +1684,17 @@ class Plugin(indigo.PluginBase):
 		return False
 
 
+	####-------------------------------------------------------------------------####
 	def handle_set_speed(self, cmd_in: str) -> bool:
 		
 		#  cmd:  (set) speed device (to) xx
+		"""Handles a 'set speed ... to N' command: extracts the speed level and target device (from a pre-parsed device id or by name matching), verifies the device has a speedLevel property, and sets its speed index via indigo.speedcontrol.setSpeedIndex.
+
+		Inputs:
+		    cmd_in (str): command string containing the speed keyword and value
+		Outputs:
+		    bool: True if the command was a speed command (handled or attempted), False if not a speed command
+		"""
 		pos = cmd_in.find(self.translate["speed"]+" ")
 		if pos < 0: return False
 		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_speed '{cmd_in}' speed at pos {pos}")
@@ -1355,6 +1752,7 @@ class Plugin(indigo.PluginBase):
 		return True
 
 
+	####-------------------------------------------------------------------------####
 	def handle_set_level(self, cmd_in: str) -> bool:
 		
 		# allow:
@@ -1367,6 +1765,13 @@ class Plugin(indigo.PluginBase):
 		#      bright device 66 
 		#   ...
 
+		"""Handles a 'set brightness/level ... to N %' command: parses the level and target device, and either sets dimmer brightness for dimmable devices, or for relay devices turns the device off when level is 0 and on otherwise.
+
+		Inputs:
+		    cmd_in (str): command string containing the brightness/level keyword and value
+		Outputs:
+		    bool: True if the command was a brightness command (handled or attempted), False if not a brightness command
+		"""
 		pos = cmd_in.find(self.translate["bright"])
 		if pos < 0: return False
 
@@ -1445,16 +1850,23 @@ class Plugin(indigo.PluginBase):
 		return True
 
 
+	####-------------------------------------------------------------------------####
 	def handle_unlock(self, cmd_in: str) -> bool:
 
-		"""
-		how to use this in a plugin:
-		def actionControlDevice(self, action, dev):
-			if action.deviceAction == indigo.kDeviceAction.Lock:
-			   do your thing 
-		and in device definitions
-	 		props["IsLockSubType"] = True
+		"""Handles an 'unlock <device>' command: resolves the target device (from pre-parsed device id or by name), checks it has the IsLockSubType plugin property, and calls indigo.device.unlock on it.
 
+		Usage note (original):
+		    	how to use this in a plugin:
+		    	def actionControlDevice(self, action, dev):
+		    		if action.deviceAction == indigo.kDeviceAction.Lock:
+		    		   do your thing
+		    	and in device definitions
+		     		props["IsLockSubType"] = True
+
+		Inputs:
+		    cmd_in (str): command string containing the unlock keyword and device
+		Outputs:
+		    bool: True if the command was an unlock command (handled or attempted), False if not an unlock command
 		"""
 	
 		pos = cmd_in.find(self.translate["unlock"]+" ")
@@ -1484,8 +1896,16 @@ class Plugin(indigo.PluginBase):
 		return True
 
 
+	####-------------------------------------------------------------------------####
 	def handle_lock(self, cmd_in: str) -> bool:
 	
+		"""Handles a 'lock <device>' command: resolves the target device (from pre-parsed device id or by name), checks it has the IsLockSubType plugin property, and calls indigo.device.lock on it.
+
+		Inputs:
+		    cmd_in (str): command string containing the lock keyword and device
+		Outputs:
+		    bool: True if the command was a lock command (handled or attempted), False if not a lock command
+		"""
 		pos = cmd_in.find(self.translate["lock"]+" ")
 		if pos < 0: return False
 
@@ -1514,17 +1934,24 @@ class Plugin(indigo.PluginBase):
 
 
 
+	####-------------------------------------------------------------------------####
 	def handle_beep(self, cmd_in: str) -> bool:
 
 
-		"""
-		how to use this in a plugin:
-		def actionControlUniversal(self, action, dev):
-			if action.deviceAction == indigo.kUniversalAction.Beep:
-				do your thing
-				has no prop defined per default, so no way to check is this action is available
+		"""Handles a 'beep <device>' command: resolves the target device (from pre-parsed device id or by name) and triggers the device's beep via indigo.device.beep.
 
-		"""	
+		Usage note (original):
+		    how to use this in a plugin:
+		    def actionControlUniversal(self, action, dev):
+		    	if action.deviceAction == indigo.kUniversalAction.Beep:
+		    		do your thing
+		    		has no prop defined per default, so no way to check is this action is available
+
+		Inputs:
+		    cmd_in (str): command string containing the beep keyword and device
+		Outputs:
+		    bool: True if the command was a beep command (handled or attempted), False if not a beep command
+		"""
 		pos = cmd_in.find(self.translate["beep"]+" ")
 		if pos < 0: return False
 
@@ -1555,8 +1982,16 @@ class Plugin(indigo.PluginBase):
 		return True
 
 
+	####-------------------------------------------------------------------------####
 	def handle_pulse(self, cmd_in: str) -> bool:
 		# pulse <device> 5 (seconds)
+		"""Handles a 'pulse <device> N seconds' command: resolves the target device and pulse duration (defaulting to 1 second), checks the device has an onState, then turns it on, sleeps for the duration, and turns it off.
+
+		Inputs:
+		    cmd_in (str): command string containing the pulse keyword, device and optional duration
+		Outputs:
+		    bool: True if the command was a pulse command (handled or attempted), False if not a pulse command
+		"""
 		pos = cmd_in.find(self.translate["pulse"])
 		if pos < 0: return False
 		if pos >10: return False
@@ -1610,8 +2045,16 @@ class Plugin(indigo.PluginBase):
 		return True
 
 
+	####-------------------------------------------------------------------------####
 	def handle_dip(self, cmd_in: str) -> bool:
 		# dip <device> 5 (seconds)
+		"""Handles a 'dip' voice command by parsing an optional duration (in seconds) and a target device name, then briefly turns the device off, waits, and turns it back on (a momentary pulse). Defaults the pulse duration to 1 second if no number is given.
+
+		Inputs:
+		    cmd_in (str): the incoming normalized voice command text
+		Outputs:
+		    bool: False if the 'dip' keyword is absent/misplaced, otherwise True after attempting the pulse and recording stats
+		"""
 		pos = cmd_in.find(self.translate["dip"])
 		if pos < 0: return False
 		if pos >10: return False
@@ -1665,8 +2108,16 @@ class Plugin(indigo.PluginBase):
 		return True
 
 
+	####-------------------------------------------------------------------------####
 	def handle_turn_on_off(self, cmd_in: str) -> bool:
 		# turn on / off<device>
+		"""Handles a 'turn on/off <device>' voice command, parsing the requested on/off state and the device name, then turns the device on or off (using brightness 100/0 for dimmable devices, or turnOn/turnOff otherwise).
+
+		Inputs:
+		    cmd_in (str): the incoming normalized voice command text
+		Outputs:
+		    bool: False if the command does not start with the 'turn' keyword, otherwise True after attempting the action and recording stats
+		"""
 		pos = cmd_in.find(self.translate["turn"])
 		if pos != 0: return False
 
@@ -1748,8 +2199,16 @@ class Plugin(indigo.PluginBase):
 		return True
 
 
+	####-------------------------------------------------------------------------####
 	def handle_toggle(self, cmd_in: str) -> bool:
 	
+		"""Handles a 'toggle <device>' voice command, resolving the target device and calling indigo.device.toggle to flip its on/off state.
+
+		Inputs:
+		    cmd_in (str): the incoming normalized voice command text
+		Outputs:
+		    bool: False if the 'toggle' keyword is absent, otherwise True after attempting the toggle and recording stats
+		"""
 		pos = cmd_in.find(self.translate["toggle"]+" ")
 		if pos < 0: return False
 	
@@ -1777,8 +2236,16 @@ class Plugin(indigo.PluginBase):
 
 
 
+	####-------------------------------------------------------------------------####
 	def handle_set_heat(self, cmd_in: str) -> bool:
 		# (set) heat <device> (to) xx 
+		"""Handles a 'set heat <device> to <temp>' voice command, stripping temperature unit words, parsing the numeric setpoint and device name, then setting the thermostat's heat setpoint.
+
+		Inputs:
+		    cmd_in (str): the incoming normalized voice command text
+		Outputs:
+		    bool: False if the 'heat' keyword is absent, otherwise True after attempting to set the heat setpoint and recording stats
+		"""
 		pos = cmd_in.find(self.translate["heat"]+" ")
 		if pos < 0: return False
 
@@ -1838,8 +2305,16 @@ class Plugin(indigo.PluginBase):
 		return True
 
 
+	####-------------------------------------------------------------------------####
 	def handle_set_cool(self, cmd_in: str) -> bool:
 		# (set) cool <device> (to) xx 
+		"""Handles a 'set cool <device> to <temp>' voice command, stripping temperature unit words, parsing the numeric setpoint and device name, then setting the thermostat's cool setpoint.
+
+		Inputs:
+		    cmd_in (str): the incoming normalized voice command text
+		Outputs:
+		    bool: False if the 'cool' keyword is absent, otherwise True after attempting to set the cool setpoint and recording stats
+		"""
 		pos = cmd_in.find(self.translate["cool"]+" ")
 		if pos < 0: return False
 		
@@ -1897,8 +2372,16 @@ class Plugin(indigo.PluginBase):
 		return True
 
 
+	####-------------------------------------------------------------------------####
 	def handle_set_variable(self, cmd_in: str) -> bool:
 		#   set variable <varname> to value
+		"""Handles a 'set variable <varname> to <value>' voice command, resolving the target Indigo variable and the value, mapping spelled-out numbers to ints, and updating the variable's value.
+
+		Inputs:
+		    cmd_in (str): the incoming normalized voice command text
+		Outputs:
+		    bool: False if the 'set variable' phrase or the 'to' separator is absent, otherwise True after attempting the update and recording stats
+		"""
 		pos = cmd_in.find(self.translate["set"]+" "+self.translate["variable"]+" ")
 		if pos < 0: return False
 
@@ -1932,9 +2415,17 @@ class Plugin(indigo.PluginBase):
 		return True
 		
 
+	####-------------------------------------------------------------------------####
 	def handle_get_value(self, cmd_in: str) -> bool:
 		#  command :=  get device xx state yy 
 		#  command :=  get variable varname  
+		"""Handles a 'get' voice query that reads back either a variable's value ('get variable <name>') or a device state ('get device <name> state <state>'), resolving the target and reporting the found value via stats feedback.
+
+		Inputs:
+		    cmd_in (str): the incoming normalized voice command text
+		Outputs:
+		    bool: False if the command does not start with the 'get' keyword, otherwise True after reporting the value or a not-found result
+		"""
 		pos = cmd_in.find(self.translate["get"]+" ")
 		if pos != 0: return False
 		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_get_value var '{cmd_in}' pos {pos}")
@@ -2002,7 +2493,15 @@ class Plugin(indigo.PluginBase):
 	#  utils for parsing, comparison.. 
 	# ==========================
 
+	####-------------------------------------------------------------------------####
 	def apply_PhraseMappings(self, p: str) -> str:
+		"""Lowercases the given phrase and applies configured phrase substitutions from map_from_to, plus fixed normalizations of 'actionid:'/'deviceid:' style tokens into spaced forms.
+
+		Inputs:
+		    p (str): the input phrase to normalize via mappings
+		Outputs:
+		    str: the phrase with mappings applied, or the original input if empty/falsy
+		"""
 		if not p:
 			return p
 		s = p.lower()
@@ -2015,7 +2514,15 @@ class Plugin(indigo.PluginBase):
 		return s
 
 
+	####-------------------------------------------------------------------------####
 	def is_blocked_device_name(self, p: str) -> bool:
+		"""Checks whether the given device name contains any configured blocked words (case-insensitive substring match).
+
+		Inputs:
+		    p (str): the device name to test against the blocked-words list
+		Outputs:
+		    bool: True if a blocked word is found in the name, otherwise False
+		"""
 		if not p:
 			return False
 		s = p.lower()	
@@ -2025,8 +2532,18 @@ class Plugin(indigo.PluginBase):
 		return False
 
 
+	####-------------------------------------------------------------------------####
 	def check_if_time_tag_ok(self, test_in: str) -> (bool, str):
+		"""Validates the leading time tag (seconds-since-epoch) on an incoming message, accepting it only if within the allowed time window; if time tags are not expected it strips any numeric prefix. Returns the validity flag and the message with the time tag removed.
+
+		Inputs:
+		    test_in (str): the incoming message whose first token may be a timestamp
+		Outputs:
+		    tuple: (bool ok, str remaining message); note the rejection branch at bad-number returns only False
+		"""
 		messageTime = test_in.split()[0].lower()
+		
+
 		if not  self.expect_time_tag:
 			# remove time since epoch tag if present 
 			try: 
@@ -2039,7 +2556,7 @@ class Plugin(indigo.PluginBase):
 				messageTimeNumber = float(messageTime)
 		except:
 			if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"Ignoring '{test_in}'; bad time info, not a number")
-			return False
+			return False, ""
 		
 		dt = time.time() - messageTimeNumber
 		if dt >  self.allow_delta_time:
@@ -2052,7 +2569,15 @@ class Plugin(indigo.PluginBase):
 
 
 	## for indigo dev  var names and state names 
+	####-------------------------------------------------------------------------####
 	def normalize_indigo_for_match(self, p: str) -> str:
+		"""Normalizes an Indigo device/variable/state name for matching by splitting camelCase into words, replacing slashes/underscores/hyphens with spaces, collapsing whitespace, and lowercasing.
+
+		Inputs:
+		    p (str): the Indigo name to normalize
+		Outputs:
+		    str: the normalized lowercased name, or empty string if input is None
+		"""
 		if p is None:
 			return ""
 		# replace outsideLamp with outside lamp
@@ -2066,7 +2591,15 @@ class Plugin(indigo.PluginBase):
 
 
 	# for all incoming command 
+	####-------------------------------------------------------------------------####
 	def normalize_incoming(self, p: str) -> str:
+		"""Normalizes an incoming command string by collapsing whitespace, applying phrase mappings via apply_PhraseMappings, and collapsing whitespace again.
+
+		Inputs:
+		    p (str): the incoming command text to normalize
+		Outputs:
+		    str: the normalized command string, or empty string if input is None
+		"""
 		if p is None:
 			return ""
 		# replace outsideLamp with outside lamp
@@ -2078,10 +2611,19 @@ class Plugin(indigo.PluginBase):
 		s = re.sub(r"\s+", " ", p).strip()# replace multiple white spaces with one blank and no blank at the end
 		s =  self.apply_PhraseMappings(s)
 		s = re.sub(r"\s+", " ", s)# replace multiple white spaces with one blank and no blank at the end
-		return s.strip()
+		return s.strip().lower()
 
 	# find last number float
+	####-------------------------------------------------------------------------####
 	def check_if_float(self, cmd_in:str, first=0) ->[int,float,list]:
+		"""Scans the words of a command string from the end toward a starting index, returning the first word that can be parsed as a float along with its position and the preceding text.
+
+		Inputs:
+		    cmd_in (str): command string to search for a numeric (float) word
+		    first (int): lowest word index to search down to (default 0)
+		Outputs:
+		    tuple: (index, float number, preceding words string) or (-1, -1, original string) if none found
+		"""
 		cmd = cmd_in.split(" ")
 		# search from back to "first word "
 		for ii in range(len(cmd)-1,first-1,-1):
@@ -2092,7 +2634,16 @@ class Plugin(indigo.PluginBase):
 		return -1, -1, cmd_in
 
 	# find last number int
+	####-------------------------------------------------------------------------####
 	def check_if_int(self, cmd_in:str, first=0) ->[int,float,list]:
+		"""Scans the words of a command string from the end toward a starting index, returning the first word that can be parsed as an integer along with its position and the preceding text.
+
+		Inputs:
+		    cmd_in (str): command string to search for a numeric (int) word
+		    first (int): lowest word index to search down to (default 0)
+		Outputs:
+		    tuple: (index, int number, preceding words string) or (-1, -1, original string) if none found
+		"""
 		cmd = cmd_in.split(" ")
 		# search from back to "first word "
 		for ii in range(len(cmd)-1,first-1,-1):
@@ -2102,7 +2653,15 @@ class Plugin(indigo.PluginBase):
 		return -1, -1, cmd_in
 
 		# find number 
+	####-------------------------------------------------------------------------####
 	def map_to_int(self, level:str):
+		"""Converts a word to an integer, first checking a number-word lookup table (e.g. spelled-out numbers) and otherwise attempting int() conversion; returns the original string if neither succeeds.
+
+		Inputs:
+		    level (str): word or number text to convert to an int
+		Outputs:
+		    int or str: the integer value, or the original string if not convertible
+		"""
 		retNumber = level
 		if level in _mapNumbertextToInt:
 			retNumber = _mapNumbertextToInt[level]
@@ -2112,7 +2671,15 @@ class Plugin(indigo.PluginBase):
 		return retNumber
 
 
+	####-------------------------------------------------------------------------####
 	def map_to_float(self, level:str):
+		"""Converts a word to a float by attempting float() directly, then falling back to converting via map_to_int; returns the original string if conversion fails.
+
+		Inputs:
+		    level (str): word or number text to convert to a float
+		Outputs:
+		    float or str: the float value, or the original string if not convertible
+		"""
 		try: 
 			xx = float(level)
 			return xx
@@ -2124,15 +2691,31 @@ class Plugin(indigo.PluginBase):
 		return level			
 
 
+	####-------------------------------------------------------------------------####
 	def device_is_dimmable(self, dev) -> bool:
+		"""Determines whether an Indigo device supports dimming by checking for a brightnessLevel or dimLevel entry in its states.
+
+		Inputs:
+		    dev (indigo.Device): device to test for dimmable states
+		Outputs:
+		    bool: True if the device has a brightness/dim state, False otherwise or on error
+		"""
 		try:
 			return ("brightnessLevel" in dev.states) or ("dimLevel" in dev.states)
 		except Exception:
 			return False
 
 
+	####-------------------------------------------------------------------------####
 	def check_if_match_devices(self, theName: str):
 		
+		"""Resolves a spoken name to an Indigo device by exact match, then by normalized substring match against device names, then via a configured synonyms-to-device-id mapping; returns None if blocked or unmatched.
+
+		Inputs:
+		    theName (str): device name (or synonym) to match
+		Outputs:
+		    indigo.Device or None: the matched device, or None if blocked or no match found
+		"""
 		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"check_if_match_device  {theName}")
 
 		if self.is_blocked_device_name(theName): return None
@@ -2158,7 +2741,15 @@ class Plugin(indigo.PluginBase):
 		return  None
 
 
+	####-------------------------------------------------------------------------####
 	def check_if_match_variables(self, theName):
+		"""Resolves a spoken name to an Indigo variable by exact match, then by normalized substring match against variable names, then via a configured synonyms-to-variable-id mapping; returns None if blocked or unmatched.
+
+		Inputs:
+		    theName (str): variable name (or synonym) to match
+		Outputs:
+		    indigo.Variable or None: the matched variable, or None if blocked or no match found
+		"""
 		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"check_if_match_variables  {theName}")
 	
 		if self.is_blocked_device_name(theName): return None
@@ -2183,7 +2774,17 @@ class Plugin(indigo.PluginBase):
 		except: pass
 		return  None
 
+	####-------------------------------------------------------------------------####
 	def check_if_property(self, dev, prop: str, errText:str) -> bool:
+		"""Checks whether a given property key exists on a device (treated as a dict); if missing, logs the error text and records a failure in the stats.
+
+		Inputs:
+		    dev (indigo.Device): device whose properties are checked
+		    prop (str): property key to look for
+		    errText (str): message to log and record if the property is absent
+		Outputs:
+		    bool: True if the property exists, False otherwise
+		"""
 		theDict = dict(dev) 
 		#indigo.server.log(f'check_if_property dict: {theDict}')
 		if prop in theDict:
@@ -2194,8 +2795,17 @@ class Plugin(indigo.PluginBase):
 			return False
 
 
+	####-------------------------------------------------------------------------####
 	def word_number(self, cmd_in:str, word_to_find:str) -> [int, int, list]:
 		# remove only phrase that have space before
+		"""Locates a target word (preceded by a space) within a command string, scanning words from the end, and returns its index, the total word count, and the split word list.
+
+		Inputs:
+		    cmd_in (str): command string to search
+		    word_to_find (str): word to locate within the command
+		Outputs:
+		    tuple: (index, word count, word list) if found, else (-1, 0, original string)
+		"""
 		if cmd_in.find(" "+word_to_find) < 0: return -1, 0, cmd_in
 		cmd = cmd_in.split(" ")
 		for ii in range(len(cmd)-1,-1,-1):
@@ -2204,14 +2814,33 @@ class Plugin(indigo.PluginBase):
 		return -1, 0, cmd_in
 
 
+	####-------------------------------------------------------------------------####
 	def remove_firstword(self, cmd_in:str, word_to_remove:str) -> str:
+		"""Removes the first word of a command string if it starts with the given word, returning the remaining text; otherwise returns the command unchanged.
+
+		Inputs:
+		    cmd_in (str): command string to trim
+		    word_to_remove (str): word expected at the start of the command
+		Outputs:
+		    str: the command with its first word removed, or the original string
+		"""
 		split_cmd = cmd_in.split()
 		if split_cmd[0].find (word_to_remove) == 0:
 			return " ".join(split_cmd[1:])
 		return cmd_in
 
 
+	####-------------------------------------------------------------------------####
 	def remove_lastword(self, cmd_in:str, word_to_remove:str, last_word_pos:int) -> str:
+		"""Removes an occurrence of a word from a command string only when it appears near the end (within last_word_pos of the final word), using word_number to locate it; otherwise returns the command unchanged.
+
+		Inputs:
+		    cmd_in (str): command string to trim
+		    word_to_remove (str): word to remove if positioned near the end
+		    last_word_pos (int): how far from the last word the word must be to qualify for removal
+		Outputs:
+		    str: the command with the word removed, or the original string if conditions are not met
+		"""
 		pos, nwords, split_cmd = self.word_number(cmd_in, word_to_remove)
 		if pos < 0: 						return cmd_in
 		if nwords < 2: 						return cmd_in
@@ -2220,8 +2849,18 @@ class Plugin(indigo.PluginBase):
 		return " ".join(split_cmd)
 
 
+	####-------------------------------------------------------------------------####
 	def remove_word(self, cmd_in:str, word_to_remove:str, minPos=0) -> str:
 		# remove only phrase that have space before and after 
+		"""Removes a word that is surrounded by spaces from a command string, but only if it occurs at or beyond a minimum position; returns the trimmed string or the original if not found before that position.
+
+		Inputs:
+		    cmd_in (str): command string to trim
+		    word_to_remove (str): word (space-delimited) to remove
+		    minPos (int): minimum character position the word must be at to be removed (default 0)
+		Outputs:
+		    str: the command with the word removed and stripped, or the original string
+		"""
 		pos = cmd_in.find(" "+word_to_remove+" ")
 		if pos < minPos: return cmd_in
 		cmd = cmd_in.split(" "+word_to_remove+" ")
@@ -2229,14 +2868,31 @@ class Plugin(indigo.PluginBase):
 		return  cmd.strip(" ")
 
 
+	####-------------------------------------------------------------------------####
 	def strip_words(self, cmd_in, word_to_strip) -> str:
+		"""Strips a set of trailing words from a command string, removing each given word from the right end and trimming surrounding whitespace.
+
+		Inputs:
+		    cmd_in (str): the command string to clean
+		    word_to_strip (list): iterable of words to strip from the end
+		Outputs:
+		    str: the command with trailing words and whitespace removed
+		"""
 		cmd = cmd_in.rstrip()
 		for word in word_to_strip:
 			cmd = cmd.rstrip(word).rstrip()
 		return  cmd.strip()
 
 	
+	####-------------------------------------------------------------------------####
 	def set_feedback_value_ok(self, value_in:str):
+		"""Sets self.feedback_value for a successful command according to the configured return_feedback mode (none, detailed, or simple), using the supplied value or a default 'ok'/return_ok string.
+
+		Inputs:
+		    value_in (str): feedback text to use, or empty string for a default
+		Outputs:
+		    None: updates self.feedback_value
+		"""
 		if not self.return_feedback:
 			if value_in != "":	self.feedback_value = value_in
 			else:				self.feedback_value = self.return_ok
@@ -2249,7 +2905,15 @@ class Plugin(indigo.PluginBase):
 								self.feedback_value = " "
 
 
+	####-------------------------------------------------------------------------####
 	def set_feedback_value_bad(self, value_in:str):
+		"""Sets self.feedback_value for a failed command according to the configured return_feedback mode (detailed, simple, or none), using the supplied value or a default 'not executed' string.
+
+		Inputs:
+		    value_in (str): feedback text to use, or empty string for a default
+		Outputs:
+		    None: updates self.feedback_value
+		"""
 		if self.return_feedback == "detailed":
 			if value_in != "":	self.feedback_value = value_in
 			else:				self.feedback_value = "not executed"
@@ -2258,10 +2922,18 @@ class Plugin(indigo.PluginBase):
 		else:
 								self.feedback_value = " "
 								
+	####-------------------------------------------------------------------------####
 	def split_compound(self, cmd: str) -> str:
-		"""
-		Split on 'and' / 'then' / '&' with spaces.
-		Example: 'unmute tv and set tv to 24' -> ['unmute tv', 'set tv to 24']
+		"""Splits a command string into a list of sub-commands on the separators ' and ', ' then ', or '&', returning the original string unchanged if none are present.
+
+		Usage note (original):
+		    Split on 'and' / 'then' / '&' with spaces.
+		    Example: 'unmute tv and set tv to 24' -> ['unmute tv', 'set tv to 24']
+
+		Inputs:
+		    cmd (str): the command string to split
+		Outputs:
+		    list or str: list of sub-command strings if a separator was found, otherwise the original string
 		"""
 		if not cmd:					return cmd
 		if " and " in cmd:			return cmd.split(" and ")
@@ -2270,9 +2942,18 @@ class Plugin(indigo.PluginBase):
 		return cmd
 
 
+	####-------------------------------------------------------------------------####
 	def stats_good(self, good: bool, retText):
-		"""
-		write out success fail to json and send back message to iphne
+		"""Records the success or failure of a command by updating the appropriate feedback variable, appending a timestamp to the ok_commands or failed_commands dictionary, and persisting that dictionary to a JSON file.
+
+		Usage note (original):
+		    write out success fail to json and send back message to iphne
+
+		Inputs:
+		    good (bool): True if the command succeeded, False if it failed
+		    retText (str): feedback text to report back for detailed mode
+		Outputs:
+		    None: updates feedback variables, command-history dicts, and writes JSON files
 		"""
 		pos = self.raw.find(" ")
 		cmdOnly = self.raw[pos+1:].strip() # no time stamp 
@@ -2304,6 +2985,13 @@ class Plugin(indigo.PluginBase):
 
 	####-----------------	 ---------
 	def decideMyLog(self, msgLevel: int) -> bool:
+		"""Decides whether a log message of the given level/area should be emitted, based on the plugin's configured debugAreas (returning True if 'All' is enabled or the area matches).
+
+		Inputs:
+		    msgLevel (str): the log level/area key to test against enabled debug areas
+		Outputs:
+		    bool: True if the message should be logged, otherwise False
+		"""
 		try:
 			if msgLevel	 == "All" or "All" in self.debugAreas:		return True
 			if msgLevel	 == ""  and "All" not in self.debugAreas:	return False
@@ -2319,7 +3007,18 @@ class Plugin(indigo.PluginBase):
 # formatter = LevelFormatter(fmt='<default log format>', level_fmts={logging.INFO: '<format string for info>'})
 # handler.setFormatter(formatter)
 class LevelFormatter(logging.Formatter):
+	####-------------------------------------------------------------------------####
 	def __init__(self, fmt=None, datefmt=None, level_fmts={}, level_date={}):
+		"""Initializes a LevelFormatter logging formatter, building a per-level logging.Formatter (with matching date format) for each level in level_fmts and storing a default format/datefmt on the base class.
+
+		Inputs:
+		    fmt (str or None): default log format string
+		    datefmt (str or None): default date format string
+		    level_fmts (dict): mapping of log level to format string
+		    level_date (dict): mapping of log level to date format string
+		Outputs:
+		    None: initializes the formatter instance
+		"""
 		self._level_formatters = {}
 		self._level_date_format = {}
 		for level, format in level_fmts.items():
@@ -2332,6 +3031,13 @@ class LevelFormatter(logging.Formatter):
 
 	####-----------------	 ---------
 	def format(self, record):
+		"""Formats a log record using the per-level formatter registered for its level number, falling back to the base Formatter's default formatting when no level-specific formatter exists.
+
+		Inputs:
+		    record (logging.LogRecord): the log record to format
+		Outputs:
+		    str: the formatted log message string
+		"""
 		if record.levelno in self._level_formatters:
 			return self._level_formatters[record.levelno].format(record)
 
