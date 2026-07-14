@@ -1,10 +1,41 @@
-changes in V22022.4.6 2026-06-01
+changes in V2022.4.6 2026-07-07
+==================
+
+bug-fix audit (~25 fixes):
+ 1. number-word map: "eleven" had an embedded tab (never matched), "twelve" mapped to 11,
+    spanish "cero" mapped to 1 (now 0), added missing "uno":1
+ 2. allow_delta_time was divided by 10 when read from prefs (30s window became 3s);
+    saving the config dialog always failed with a TypeError (str * float) - both fixed
+ 3. list_devices_max read as string -> TypeError when comparing in "list devices"
+ 4. "silence" command crashed (undefined cmdLower); silence on/off logic rewritten:
+    on = mute feedback, off = restore configured feedback mode
+ 5. set variable by name crashed (undefined level/value in both branches)
+ 6. set variable / get variable with "variable id:<id> value" (missing 2nd colon)
+    crashed on typo indigo.variales (2x)
+ 7. "get <device> state <state>" by device name never worked (dead code path);
+    also reported wrong feedback texts ("variable not found", success on missing state)
+ 8. map_to_float fallback crashed (map_to_int missing self.) -> "wait five" etc. failed
+ 9. strip_words removed characters instead of whole words (could eat device-name ends,
+    e.g. "office" -> "offi")
+10. turn on/off with deviceid: compared literal "on"/"off" against translated words ->
+    wrong direction in non-english configs
+11. variableid:... was never normalized to "variable id:" (mapping was a no-op)
+12. "action id:" with trailing text crashed on int() parse; "acton not present" typo
+13. handle_unlock logged undefined result; handle_set_speed logged undefined theName
+    (both crashed the handler when debug logging was on)
+14. debug areas "ReceivdeData" typo -> receive-data debug logging never appeared
+15. "debug off" fell through and was re-processed as a device command (missing return)
+16. check_if_float spammed the indigo event log on every parse (leftover debug print)
+17. set_feedback_value_ok referenced undefined self.return_ok (dead branch removed)
+18. remove_firstword crashed on empty string; openEncoding error log malformed;
+    "not finshed"/"state not defned" typos; removed unused import copy
+
+changes in V22022.4.5 2026-06-01
 ==================  
 
 1. added "straight (plain) action command": when enabled in config ("enable straight action command"),
    speak the exact name of an indigo action group to run it directly, no synonym needed.
    matches the exact name first, then a normalized compare ignoring case, spaces and "/".
-
 
 
 changes in V22022.4.3 2026-01-07

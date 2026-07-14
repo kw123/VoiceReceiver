@@ -23,7 +23,6 @@ import codecs
 import re
 
 import logging
-import copy
 
 from checkIndigoPluginName import checkIndigoPluginName
 
@@ -36,9 +35,9 @@ _defaultDateOnlyStampFormat = "%Y-%m-%d"
 _defaultTimeStampFormat = "%H:%M:%S"
 
 # iphone sometimes sends text instead of numbers.
-_mapNumbertextToInt = {	"zero":0, "null":0, 			"one":1,  "two":2,  "three":3, "four":4, "five":5, 				"six":6,  	"seven":7,  "eight":8,	"nine":9, "ten":10,	"	eleven":11,"twelve":11,				#	english
+_mapNumbertextToInt = {	"zero":0, "null":0, 			"one":1,  "two":2,  "three":3, "four":4, "five":5, 				"six":6,  	"seven":7,  "eight":8,	"nine":9, "ten":10,	"eleven":11,"twelve":12,				#	english
 						          "null":0, 			"eins":1, "zwei":2, "drei":3,  "vier":4, "fünf":5, "fuenf":5, 	"sechs":6,	"sieben":7, "acht":8, 	"neun":9, "zehn":10,	"elf":11,  "zwölf":12, "zwoelf":12,#	german
-						          "nulo":0, 			"cero":1, "dos":2, "tres":3,  "cuatro":4, "cinco":5, 		 	"seis":6,	"siete":7,	"ocho":8, 	"nueve":9, "diez":10,	"once":11,  "doce":12,				#	spanish
+						          "nulo":0, "cero":0,	"uno":1,  "dos":2, "tres":3,  "cuatro":4, "cinco":5, 		 	"seis":6,	"siete":7,	"ocho":8, 	"nueve":9, "diez":10,	"once":11,  "doce":12,				#	spanish
 						"nulle":0, "zero":0, "zéro":0,	"un":1,   "deux":2, "trois":3, "quatre":4, "cinq":5, 			"six":6,	"sept":7, 	"huit":8, 	"neuf":9, "dix":10, 	"onze":11, "douze":12}				#	french
 
 
@@ -315,10 +314,12 @@ class Plugin(indigo.PluginBase):
 
 			self.use_fragments_to_dermine_device = self.pluginPrefs.get("use_fragments_to_dermine_device", kDefaultPluginPrefs["use_fragments_to_dermine_device"])
 
-			self.allow_delta_time = float(self.pluginPrefs.get("allow_delta_time", kDefaultPluginPrefs["allow_delta_time"]*10.))/10.
+			try:	self.allow_delta_time = float(self.pluginPrefs.get("allow_delta_time", kDefaultPluginPrefs["allow_delta_time"]))
+			except:	self.allow_delta_time = kDefaultPluginPrefs["allow_delta_time"]
 			self.expect_time_tag = self.pluginPrefs.get("expect_time_tag", kDefaultPluginPrefs["expect_time_tag"])
 
-			self.list_devices_max = self.pluginPrefs.get("list_devices_max", kDefaultPluginPrefs["list_devices_max"])
+			try:	self.list_devices_max = int(self.pluginPrefs.get("list_devices_max", kDefaultPluginPrefs["list_devices_max"]))
+			except:	self.list_devices_max = kDefaultPluginPrefs["list_devices_max"]
 
 			self.folder_name = self.pluginPrefs.get("folder_name", kDefaultPluginPrefs["folder_name"])	
 			try:    indigo.variables.folder.create(self.folder_name)
@@ -1167,7 +1168,7 @@ class Plugin(indigo.PluginBase):
 				return codecs.open( fName, readOrWrite, "utf-8")
 
 		except	Exception as e:
-			self.indiLOG.log(20,"openEncoding error w r/w:{}, fname:".format(readOrWrite, fName))
+			self.indiLOG.log(20,"openEncoding error w r/w:{}, fname:{}".format(readOrWrite, fName))
 			self.indiLOG.log(40,"", exc_info=True)
 
 
@@ -1187,7 +1188,7 @@ class Plugin(indigo.PluginBase):
 		errorDict = indigo.Dict()
 		try:
 			valuesDict["MSG"]					= "ok"
-			self.allow_delta_time =				float(valuesDict.get("allow_delta_time", self.allow_delta_time)*10.)/10.
+			self.allow_delta_time =				float(valuesDict.get("allow_delta_time", self.allow_delta_time))
 			self.expect_time_tag =				valuesDict.get("expect_time_tag", self.expect_time_tag)
 			self.folder_name =					valuesDict.get("folder_name", self.folder_name)
 			self.var_name =						valuesDict.get("var_name", self.var_name)
@@ -1288,7 +1289,7 @@ class Plugin(indigo.PluginBase):
 
 		
 		if self.feedback_value != " ":	indigo.variable.updateValue(self.var_name_feedback, value=self.feedback_value)
-		else			: 				indigo.variable.updateValue(self.var_name_feedback, value="not finshed")
+		else			: 				indigo.variable.updateValue(self.var_name_feedback, value="not finished")
 		
 		return  
 
@@ -1303,11 +1304,11 @@ class Plugin(indigo.PluginBase):
 		    None: processes the command, logs, runs actions and updates the feedback variable/stats
 		"""
 		try:
-			if self.decideMyLog("ReceivdeData"): self.indiLOG.log(20, f'var changed  "{new_var}"')
-				
+			if self.decideMyLog("ReceiveData"): self.indiLOG.log(20, f'var changed  "{new_var}"')
+
 			self.raw = new_var
-	
-			if self.decideMyLog("ReceivdeData"): self.indiLOG.log(20, f"Command received raw: '{self.raw}'")
+
+			if self.decideMyLog("ReceiveData"): self.indiLOG.log(20, f"Command received raw: '{self.raw}'")
 	
 			if not self.raw or not self.raw.strip():
 				return
@@ -1322,7 +1323,7 @@ class Plugin(indigo.PluginBase):
 			# replace _- A -> a string, remove double spaces etc 
 			cmd =  self.normalize_incoming(raw_stripped)
 			
-			if self.decideMyLog("ReceiveData"): self.indiLOG.log(20, f"Normalized command: '{raw_stripped}'")
+			if self.decideMyLog("ReceiveData"): self.indiLOG.log(20, f"Normalized command: '{cmd}'")
 	
 			########## simple commands  #######
 	
@@ -1348,6 +1349,7 @@ class Plugin(indigo.PluginBase):
 				self.pluginPrefs["debugAll"] = False
 				self.stats_good(True, "debug off")
 				self.setDebugFromPrefs(self.pluginPrefs)
+				return
 
 			elif cmd == "help":
 				self.indiLOG.log(20, f"received command: '{raw_stripped}'")
@@ -1359,13 +1361,14 @@ class Plugin(indigo.PluginBase):
 
 			elif cmd.find(self.translate["silence"]) >-1:
 				self.indiLOG.log(20, f"received command: '{raw_stripped}'")
-				if cmdLower.find(" "+self.translate["on"]) > 5:
-					if not self.return_feedback:
-						self.return_feedback = True
-					self.stats_good(True, "silenced")
-				else:
-					self.return_feedback = False
+				if cmd.find(" "+self.translate["off"]) > -1:
+					# silence off: restore feedback mode from prefs, then confirm
+					self.return_feedback = self.pluginPrefs.get("return_feedback", kDefaultPluginPrefs["return_feedback"])
 					self.stats_good(True, "silence off")
+				else:
+					# silence (on): confirm first, then mute future feedback
+					self.stats_good(True, "silenced")
+					self.return_feedback = ""
 				return
 
 	
@@ -1416,16 +1419,17 @@ class Plugin(indigo.PluginBase):
 				
 			if self.decideMyLog("Logic"): self.indiLOG.log(20, f'execute_actions_for_command action id :{xx}')
 			if len(xx) == 2:
-				id = int(xx[1].strip())
+				try:	id = int(re.split(r"[:\s]", xx[1].strip())[0])
+				except:	id = 0
 				if id in indigo.actionGroups:
 					indigo.actionGroup.execute(id)
 					self.stats_good(True, "action executed")
 					if self.decideMyLog("Logic"): self.indiLOG.log(20, f"try_pattern_commands action executed ")
 					return True
 				if self.decideMyLog("Logic"): self.indiLOG.log(20, f' :{xx},  not present in indigo action groups')
-				self.stats_good(False,"acton not present")
+				self.stats_good(False,"action not present")
 				return True
-			self.stats_good(False,"acton not present")
+			self.stats_good(False,"action not present")
 			return True
 	
 		# 1.2 check if this is an action known under synonym:
@@ -1573,7 +1577,7 @@ class Plugin(indigo.PluginBase):
 								if self.decideMyLog("Logic"): self.indiLOG.log(20, f"try_pattern_commands 1 variable id not found")
 								return True
 							value = xx[1][pos+1:]
-							self.variable = [xx[0], indigo.variales[valid], value]
+							self.variable = [xx[0], indigo.variables[valid], value]
 							if self.decideMyLog("Logic"): self.indiLOG.log(20, f"try_pattern_commands variable: {self.variable} ")
 						else:
 							valid = int(xx[1])
@@ -1582,7 +1586,7 @@ class Plugin(indigo.PluginBase):
 								if self.decideMyLog("Logic"): self.indiLOG.log(20, f"try_pattern_commands 1 variable id not found")
 								return True
 							value = ""
-							self.variable = [xx[0], indigo.variales[valid], value]
+							self.variable = [xx[0], indigo.variables[valid], value]
 							if self.decideMyLog("Logic"): self.indiLOG.log(20, f"try_pattern_commands variable: {self.variable} ")
 				else:
 					self.stats_good(False,"id missing")
@@ -1742,7 +1746,7 @@ class Plugin(indigo.PluginBase):
 				return True
 				
 		if  not self.check_if_property( dev, "speedLevel", "not available"): return True
-		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_speed found '{theName}' {level}")
+		if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_speed found '{dev.name}' {level}")
 				
 		try:
 			indigo.speedcontrol.setSpeedIndex(dev.id, value=level)
@@ -1892,7 +1896,7 @@ class Plugin(indigo.PluginBase):
 		try:
 			indigo.device.unlock(dev.id)
 			self.stats_good(True, self.feedback_ok["unlock"])
-			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"unlock dev '{dev.name}' {result}")
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"unlock dev '{dev.name}'")
 		except:
 			self.indiLOG.log(20, f"handle_unlock not executed")
 			self.stats_good(False, "not executed")
@@ -2128,15 +2132,14 @@ class Plugin(indigo.PluginBase):
 			dev = self.device[1]
 			if len(self.device[2]) > 0:
 				cmd = self.device[2].strip()
-				if cmd.find(self.translate["on"]) > -1: state = "on"
-				elif cmd.find(self.translate["off"]) > -1: state = "off"
-				else: state = "on"
+				if cmd.find(self.translate["off"]) > -1: state = self.translate["off"]
+				else: state = self.translate["on"]
 			else:
 				cmd = self.device[0].strip().split(" ")
 				if len(cmd) == 2:
 					state = cmd[1]
 				else:
-					state = "on"
+					state = self.translate["on"]
 					
 			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_turn_on_off w devId:: '{dev.name}', state:{state}")
 
@@ -2389,25 +2392,25 @@ class Plugin(indigo.PluginBase):
 		if pos < 0: return False
 
 		if self.variable != []:
-			level = self.variable[2].split(" ")[-1]
+			value = self.variable[2].split(" ")[-1]
 			var = self.variable[1]
-			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_variable '{var.name}' level {level}")
+			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_variable '{var.name}' value {value}")
 
 		else:
 			rest = cmd_in.split(self.translate["set"]+" "+self.translate["variable"]+" ")[1]
 			if " "+self.translate["to"]+" " not in rest: return  False
-			
+
 			theName, value = rest.split(" "+self.translate["to"]+" ")
-			
-			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_variable   variable:{theName}  to {level}")
+
+			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_set_variable   variable:{theName}  to {value}")
 			var = self.check_if_match_variables(theName)
 			if not var:
 				if self.decideMyLog("BadMessage"): self.indiLOG.log(20, f"handle_set_variable No Variable found matching '{theName}'")
 				self.stats_good(False, "variable not found")
 				return True
-	
-			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_set_variable update var '{var.name}' to {level}")
-	
+
+			if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_set_variable update var '{var.name}' to {value}")
+
 		level = self.map_to_int(value.strip()) # one --> 1
 		try:
 			indigo.variable.updateValue(var.name, value=str(level))
@@ -2434,43 +2437,46 @@ class Plugin(indigo.PluginBase):
 		if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_get_value var '{cmd_in}' pos {pos}")
 
 		if self.device == []:
-			var = False
+			# variable get:  "get variable <name>"  or pre-parsed "get variable id:..."
 			if self.variable != []:
 				var = self.variable[1]
 				if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_get_value '{var.name}' value {var.value}")
-	
-			else:
-				cmd = cmd_in.split(self.translate["get"]+" ")[1]
-				pos = cmd.find(self.translate["variable"]+" ")
-				if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_get_value var '{cmd}' pos {pos}")
-				if pos == 0: 
-					varName = cmd.split(self.translate["variable"]+" ")[1]
-					var = self.check_if_match_variables(varName)
-			if var:
 				self.stats_good(True, var.value)
 				if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_get_value var '{var.name}' value:{var.value}")
-			else:
-				if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_get_value var '{varName}' not found")
-				self.stats_good(False, "variable not found")
-			return True
-			
-			
+				return True
+
+			cmd = cmd_in.split(self.translate["get"]+" ")[1]
+			pos = cmd.find(self.translate["variable"]+" ")
+			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_get_value var '{cmd}' pos {pos}")
+			if pos == 0:
+				varName = cmd.split(self.translate["variable"]+" ")[1]
+				var = self.check_if_match_variables(varName)
+				if var:
+					self.stats_good(True, var.value)
+					if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_get_value var '{var.name}' value:{var.value}")
+				else:
+					if self.decideMyLog("UpdateIndigo"): self.indiLOG.log(20, f"handle_get_value var '{varName}' not found")
+					self.stats_good(False, "variable not found")
+				return True
+			# not a variable query: fall through to device/state handling below
+
+
 		# check devices
 		if self.device != []:
 			dev = self.device[1]
 			state = self.device[2].strip()
 			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_get_value  in DEVICE  try '{dev.name}, {state}")
 		else:
-			cmd = cmd_in[4:].strip()
+			cmd = cmd_in.split(self.translate["get"]+" ")[1].strip()
 			xx = cmd.split(" state ")
 			if self.decideMyLog("Logic"): self.indiLOG.log(20, f'handle_get_value dev  split" State " {xx}')
-			if len(xx) < 2: 
-				self.stats_good(True, "state not defned")
+			if len(xx) < 2:
+				self.stats_good(False, "state not defined")
 				return True
 			devName, state = xx
 			dev = self.check_if_match_devices(devName)
-			if not dev: 
-				self.stats_good(False,"variable not found")
+			if not dev:
+				self.stats_good(False,"device not found")
 				return True
 			state = state.strip()
 			if self.decideMyLog("Logic"): self.indiLOG.log(20, f"handle_get_value dev '{devName}' {state} ")
@@ -2511,7 +2517,7 @@ class Plugin(indigo.PluginBase):
 		for bad in self.map_from_to:
 			if bad in s:
 				s = s.replace(bad, self.map_from_to[bad])
-		for xx, yy in [["actionid:","action id:"], ["deviceid:", "device id:"], ["variable id:", "variable id:"]]:
+		for xx, yy in [["actionid:","action id:"], ["deviceid:", "device id:"], ["variableid:", "variable id:"]]:
 			if xx in s: 
 				s = s.replace(xx, yy)
 		return s
@@ -2630,7 +2636,6 @@ class Plugin(indigo.PluginBase):
 		cmd = cmd_in.split(" ")
 		# search from back to "first word "
 		for ii in range(len(cmd)-1,first-1,-1):
-			indigo.server.log(f' ii:{ii}, cmd:{cmd[ii]}, cmd:{cmd_in}')
 			number  = self.map_to_float(cmd[ii])
 			if type(number) == type(" "): continue
 			return  ii, number , " ".join(cmd[0:ii])
@@ -2688,7 +2693,7 @@ class Plugin(indigo.PluginBase):
 			return xx
 		except: pass
 		try:
-			xx = float(map_to_int(level))
+			xx = float(self.map_to_int(level))
 			return float(xx)
 		except: pass
 		return level			
@@ -2828,6 +2833,7 @@ class Plugin(indigo.PluginBase):
 		    str: the command with its first word removed, or the original string
 		"""
 		split_cmd = cmd_in.split()
+		if not split_cmd: return cmd_in
 		if split_cmd[0].find (word_to_remove) == 0:
 			return " ".join(split_cmd[1:])
 		return cmd_in
@@ -2881,10 +2887,19 @@ class Plugin(indigo.PluginBase):
 		Outputs:
 		    str: the command with trailing words and whitespace removed
 		"""
-		cmd = cmd_in.rstrip()
-		for word in word_to_strip:
-			cmd = cmd.rstrip(word).rstrip()
-		return  cmd.strip()
+		# remove whole trailing words only; str.rstrip(word) would strip any of the
+		# word's CHARACTERS and eat the end of device names ("office" -> "offi")
+		cmd = cmd_in.strip()
+		changed = True
+		while changed:
+			changed = False
+			for word in word_to_strip:
+				if cmd == word:
+					return ""
+				if cmd.endswith(" "+word):
+					cmd = cmd[:len(cmd)-len(word)].strip()
+					changed = True
+		return  cmd
 
 	
 	####-------------------------------------------------------------------------####
@@ -2896,9 +2911,6 @@ class Plugin(indigo.PluginBase):
 		Outputs:
 		    None: updates self.feedback_value
 		"""
-		if not self.return_feedback:
-			if value_in != "":	self.feedback_value = value_in
-			else:				self.feedback_value = self.return_ok
 		if self.return_feedback == "detailed":
 			if value_in != "":	self.feedback_value = value_in
 			else:				self.feedback_value = "ok"
