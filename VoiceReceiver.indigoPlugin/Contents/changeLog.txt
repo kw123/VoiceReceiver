@@ -1,4 +1,4 @@
-changes in V2022.4.6 2026-07-07
+changes in V2022.4.7 2026-07-07
 ==================
 
 bug-fix audit (~25 fixes):
